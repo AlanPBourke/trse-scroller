@@ -67,7 +67,7 @@ begin
 		else
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
-
+	waitforspace();
 end;
 
 /*
@@ -93,7 +93,7 @@ begin
 	val := hi(screen_char_loc);						// $0400 or $4400
 	if g_currentBank = 0 then val := val + $40;		// $04 or $44
 
-	if (scroll >= 127) then begin					// > 127 is negative number 
+	if (scroll > 127) then begin
 		for i := 0 to 24 do begin
 			
 			moveto(0, i, val);		// ScreenMemory pointer to x, y, address high

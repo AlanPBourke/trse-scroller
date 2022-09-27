@@ -67,7 +67,7 @@ begin
 		else
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
-	
+	waitforspace();
 end;
 
 /*
@@ -95,7 +95,7 @@ begin
 	for i := 0 to 24 do begin
 		
 		moveto(0, i, val);		// ScreenMemory pointer to x, y, address high
-		screenmemory[39] := $1	
+		screenmemory[39] := 65 + i;
 
 	end;	
 	scroll:=7;
@@ -110,7 +110,7 @@ interrupt RasterMain();
 begin
 	StartIRQ(@useKernal);
 	
-	scroll:=scroll - 2; // Scroll speed
+	scroll := scroll - 2; // Scroll speed
 	scrollx(scroll);
 	setregularcolormode();
 	// Prints out the current text on columm 39	
@@ -120,11 +120,10 @@ begin
 	if scroll = 3 then CopyHScreen(1);
 	// End of scroll: switch banks, reset scroll
 	if (scroll = 7) then SwitchBank();
-+
+
 	if (scroll = 7 or scroll = 3 ) then ShiftCharsetData();	
 			
 	hideborderx(1);
-	waitforspace();
 	CloseIRQ();
 end;
 
@@ -153,7 +152,7 @@ begin
 	screen_fg_col:=black;	
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
-	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400
+	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
 	fillwithchars();
 	//CopyHScreen(0);
 	//CopyHScreen(1);
