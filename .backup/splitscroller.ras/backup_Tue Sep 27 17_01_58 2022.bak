@@ -2,30 +2,30 @@ program SplitScroller;
 //
 var
 	// Various
-	dx,dy,c,val,i,j, scroll,scrollsplit,val2,k,x,y : byte = 0;
+	dx,dy,c,val,i,j, scrollsplit,val2,k,x,y : byte = 0;
+	scroll : byte = 0;
 	radial : integer;
 	keyin : byte = 0;
 	@define charsetLoc1 $2800
 	@define charsetLoc2 $6800
 	@define fontLoc $7000
 	// Place charset on both bank 0 and 1
-	charset: IncBin("resources/charsets/charset.bin",@charsetLoc1);
-	charset1_2: IncBin("resources/charsets/charset.bin",@charsetLoc2);
+	charset: IncBin("resources/charsets/charset.bin", @charsetLoc1);
+	charset1_2: IncBin("resources/charsets/charset.bin", @charsetLoc2);
 	// 2x2 font included at some random position
 	font: IncBin("resources/charsets/charset_16x16.bin",@fontLoc);
 	this_char : byte;
 	
 	// Scroll shift
-	shiftx: byte;
 	// Scroller y amplitude
-	text: string=( "SCROLL ME TROLL ME    "); // ends with a zero
 	
 	// Banking variable
 	g_currentBank:byte = 0;
-// // use chars 64-72 as fire chars. You could try others here, like 80	g_dataLoc : byte=$1a;
 	
-	textp: pointer;
-	zeropage1:pointer;
+	
+	saddr : array[25] of integer;
+	saddr2 : array[25] of integer;
+	
 	
 	// Turn ON of off KERNAL (0/1)
 	@define useKernal "0"
@@ -44,30 +44,32 @@ end;
 
 procedure ShiftCharsetData();
 begin
-	memcpy(^@charsetLoc1+@charVal*8, 0, ^@charsetLoc1+@charVal*8+128,8);
-	
 
+	memcpy(^@charsetLoc1+@charVal*8, 0, ^@charsetLoc1+@charVal*8+128,8);
 	memcpy(^@charsetLoc1+@charVal*8+8, 0, ^@charsetLoc1+@charVal*8,128);
 	memcpy(^@charsetLoc2+@charVal*8, 0, ^@charsetLoc2+@charVal*8+128,8);
 	memcpy(^@charsetLoc2+@charVal*8+8, 0, ^@charsetLoc2+@charVal*8,128);
+
 end;
 
 procedure CopyHScreen(ul_:byte);
 begin
-	if g_currentBank=0 offpage then begin
+	
+	if g_currentBank = 0 offpage then begin
 		if ul_=0 then
 			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520,9, 1,0)
 		else
 			copyhalfscreen(^$0400, ^$4400 -^1, 13, 1,0);
 		
 	end;
-	if g_currentBank=1 offpage then begin
+	
+	if g_currentBank = 1 offpage then begin
 		if ul_=0 then
 			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 9, 1,0)
 		else
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
-	waitforspace();
+
 end;
 
 /*
@@ -75,15 +77,15 @@ Switches between bank 0 and 1
 */
 procedure SwitchBank();
 begin
+
 	if g_currentBank=0 then
 		SetBank(VIC_BANK1)
 	else
 		SetBank(VIC_BANK0);
 
 	setcharsetlocation($2800);	
-	
+	g_currentBank := (g_currentBank + 1) & 1;
 
-	g_currentBank:=(g_currentBank+1)&1;
 end;
 
 procedure DrawColumn39();
@@ -93,16 +95,19 @@ begin
 	val := hi(screen_char_loc);						// $0400 or $4400
 	if g_currentBank = 0 then val := val + $40;		// $04 or $44
 
-	if (scroll < 0) then begin
+	//if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
+		
 		for i := 0 to 24 do begin
 			
 			moveto(0, i, val);		// ScreenMemory pointer to x, y, address high
-			screenmemory[39] := 65 + i;
-	
+			screenmemory[39] := i;
+			//screenmemory := screenmemory + screen_width;
+			
 		end;	
-		scroll:=7;
 		
-	end;
+	//	scroll := 7;
+		
+	//end;
 end;
 
 
@@ -117,8 +122,12 @@ begin
 	scroll := scroll - 2; // Scroll speed
 	scrollx(scroll);
 	setregularcolormode();
+
+	if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
+		DrawColumn39();
+		scroll := 7;
+	end;		
 	// Prints out the current text on columm 39	
-	DrawColumn39();
 	// If scroll=1 or 3, copy upper or lower screen to the other bank
 	if scroll = 1 then CopyHScreen(0);
 	if scroll = 3 then CopyHScreen(1);
@@ -126,9 +135,13 @@ begin
 	if (scroll = 7) then SwitchBank();
 
 	if (scroll = 7 or scroll = 3 ) then ShiftCharsetData();	
+
+
 			
 	hideborderx(1);
+	
 	CloseIRQ();
+	
 end;
 
 procedure fillwithchars();
@@ -154,6 +167,8 @@ begin
 	// Set color background
 	screen_bg_col:=black;	
 	screen_fg_col:=black;	
+	CreateAddressTable( #saddr, $0400, 40, 25 );
+	CreateAddressTable( #saddr2, $4400, 40, 25 );
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
@@ -163,8 +178,6 @@ begin
 	// Fill colors
 	//InitColors();	
 	// Initialize text pointer	
-	
-	shiftx:=7;
 	
 	hideborderx(0);
 	
