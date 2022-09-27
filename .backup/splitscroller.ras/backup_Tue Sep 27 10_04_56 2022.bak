@@ -83,7 +83,7 @@ begin
 	setcharsetlocation($2800);	
 	
 
-	g_currentBank:=(g_currentBank+1)&1;
+	currentBank:=(g_currentBank+1)&1;
 end;
 
 procedure DrawColumn39();
@@ -120,7 +120,7 @@ begin
 	if scroll = 3 then CopyHScreen(1);
 	// End of scroll: switch banks, reset scroll
 	if (scroll = 7) then SwitchBank();
-
++
 	if (scroll = 7 or scroll = 3 ) then ShiftCharsetData();	
 			
 	hideborderx(1);
