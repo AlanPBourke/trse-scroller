@@ -89,7 +89,7 @@ begin
 	if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
 		
 		moveto(0, 0, val);		// ScreenMemory pointer to x, y, address high
-		for i := 0 to 25 do begin
+		for i := 0 to 24 do begin
 			screenmemory[39] := 65 + i;
 			screenmemory := screenmemory + screen_width;
 			//addbreakpoint();
