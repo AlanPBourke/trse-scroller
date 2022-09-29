@@ -1,3 +1,14 @@
+/*from to
+311  14 Non-visible part of the top of the screen / Non-visible part of the upper border (16 lines)
+ 15  50 Visible part of the upper border (36 lines)
+ 51 250 Regular (and visible, doh!) part of the display / Screen background (200 lines)
+251 299 Visible part of the lower border (49 lines)
+300 302 Visible part of the vertical blanking interval (VBI) / Very bottom of the visible screen  (3 lines)
+303 310 Non-visible part of the vertical blanking interval (VBI) (8 lines)
+*/
+
+/* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
+
 program SplitScroller;
 //
 var
