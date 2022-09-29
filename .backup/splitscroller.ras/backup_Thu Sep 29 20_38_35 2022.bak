@@ -10,8 +10,8 @@ var
 	@define charsetLoc2 $6800
 	@define fontLoc $7000
 	// Place charset on both bank 0 and 1
-	charset: IncBin("resources/charsets/charset.bin", @charsetLoc1);
-	charset1_2: IncBin("resources/charsets/charset.bin", @charsetLoc2);
+	charset: IncBin("resources/charsets/Capcon.bin", @charsetLoc1);
+	charset1_2: IncBin("resources/charsets/Capcon.bin", @charsetLoc2);
 	// 2x2 font included at some random position
 	font: IncBin("resources/charsets/charset_16x16.bin",@fontLoc);
 	this_char : byte;
@@ -42,22 +42,12 @@ begin
 	end;	
 end;
 
-procedure ShiftCharsetData();
-begin
-
-	memcpy(^@charsetLoc1+@charVal*8, 0, ^@charsetLoc1+@charVal*8+128,8);
-	memcpy(^@charsetLoc1+@charVal*8+8, 0, ^@charsetLoc1+@charVal*8,128);
-	memcpy(^@charsetLoc2+@charVal*8, 0, ^@charsetLoc2+@charVal*8+128,8);
-	memcpy(^@charsetLoc2+@charVal*8+8, 0, ^@charsetLoc2+@charVal*8,128);
-
-end;
-
 procedure CopyHScreen(ul_:byte);
 begin
 	
 	if g_currentBank = 0 offpage then begin
 		if ul_=0 then
-			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520,9, 1,0)
+			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520, 12, 1,0)
 		else
 			copyhalfscreen(^$0400, ^$4400 -^1, 13, 1,0);
 		
@@ -65,7 +55,7 @@ begin
 	
 	if g_currentBank = 1 offpage then begin
 		if ul_=0 then
-			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 9, 1,0)
+			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 12, 1,0)
 		else
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
@@ -92,22 +82,25 @@ procedure DrawColumn39();
 begin
 
 	
+	// Always draw to the other screen.
 	val := hi(screen_char_loc);						// $0400 or $4400
 	if g_currentBank = 0 then val := val + $40;		// $04 or $44
 
-	//if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
-		
-		for i := 0 to 24 do begin
-			
-			moveto(0, i, val);		// ScreenMemory pointer to x, y, address high
-			screenmemory[39] := i;
-			//screenmemory := screenmemory + screen_width;
-			
+	if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
+		this_char := 1;
+		moveto(0, 0, val);		// ScreenMemory pointer to x, y, address high
+		for i := 0 to 25 do begin
+			screenmemory[39] := this_char;
+			screenmemory := screenmemory + screen_width;
+			inc(this_char);
+			if this_char > 10 then this_char := 1;
+			//addbreakpoint();
 		end;	
 		
-	//	scroll := 7;
-		
-	//end;
+		scroll := 7;
+		waitforspace();
+	end;
+	nop(1);
 end;
 
 
@@ -122,6 +115,9 @@ begin
 	scroll := scroll - 2; // Scroll speed
 	scrollx(scroll);
 	setregularcolormode();
+
+	DrawColumn39();
+
 	// Prints out the current text on columm 39	
 	// If scroll=1 or 3, copy upper or lower screen to the other bank
 	if scroll = 1 then CopyHScreen(0);
@@ -129,12 +125,9 @@ begin
 	// End of scroll: switch banks, reset scroll
 	if (scroll = 7) then SwitchBank();
 
-	if (scroll = 7 or scroll = 3 ) then ShiftCharsetData();	
+	//if (scroll = 7 or scroll = 3 ) then ShiftCharsetData();	
 
-	if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
-		DrawColumn39();
-		scroll := 7;
-	end;		
+
 			
 	hideborderx(1);
 	
@@ -170,7 +163,8 @@ begin
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
-	fillwithchars();
+	//fillwithchars();
+	//waitforspace();
 	//CopyHScreen(0);
 	//CopyHScreen(1);
 	// Fill colors

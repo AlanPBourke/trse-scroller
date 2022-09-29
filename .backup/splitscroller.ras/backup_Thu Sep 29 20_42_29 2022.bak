@@ -10,8 +10,8 @@ var
 	@define charsetLoc2 $6800
 	@define fontLoc $7000
 	// Place charset on both bank 0 and 1
-	charset: IncBin("resources/charsets/charset.bin", @charsetLoc1);
-	charset1_2: IncBin("resources/charsets/charset.bin", @charsetLoc2);
+	charset: IncBin("resources/charsets/Capcon.bin", @charsetLoc1);
+	charset1_2: IncBin("resources/charsets/Capcon.bin", @charsetLoc2);
 	// 2x2 font included at some random position
 	font: IncBin("resources/charsets/charset_16x16.bin",@fontLoc);
 	this_char : byte;
@@ -47,7 +47,7 @@ begin
 	
 	if g_currentBank = 0 offpage then begin
 		if ul_=0 then
-			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520,9, 1,0)
+			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520, 13, 1,0)
 		else
 			copyhalfscreen(^$0400, ^$4400 -^1, 13, 1,0);
 		
@@ -55,7 +55,7 @@ begin
 	
 	if g_currentBank = 1 offpage then begin
 		if ul_=0 then
-			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 9, 1,0)
+			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 13, 1,0)
 		else
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
@@ -87,11 +87,13 @@ begin
 	if g_currentBank = 0 then val := val + $40;		// $04 or $44
 
 	if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
-		
+		this_char := 1;
 		moveto(0, 0, val);		// ScreenMemory pointer to x, y, address high
-		for i := 0 to 26 do begin
-			screenmemory[39] := 65 + i;
+		for i := 0 to 25 do begin
+			screenmemory[39] := this_char;
 			screenmemory := screenmemory + screen_width;
+			inc(this_char);
+			if this_char > 10 then this_char := 1;
 			//addbreakpoint();
 		end;	
 		
