@@ -47,7 +47,7 @@ begin
 	
 	if g_currentBank = 0 offpage then begin
 		if ul_=0 then
-			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520, 12, 1,0)
+			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520, 13, 1,0)
 		else
 			copyhalfscreen(^$0400, ^$4400 -^1, 13, 1,0);
 		
@@ -55,7 +55,7 @@ begin
 	
 	if g_currentBank = 1 offpage then begin
 		if ul_=0 then
-			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 12, 1,0)
+			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 13, 1,0)
 		else
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
@@ -98,7 +98,7 @@ begin
 		end;	
 		
 		scroll := 7;
-		waiforspace();
+		
 	end;
 	nop(1);
 end;
@@ -163,6 +163,7 @@ begin
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
+	InitColors();
 	//fillwithchars();
 	//waitforspace();
 	//CopyHScreen(0);

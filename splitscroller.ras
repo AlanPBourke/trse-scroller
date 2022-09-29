@@ -29,7 +29,7 @@ var
 	
 	// Turn ON of off KERNAL (0/1)
 	@define useKernal "0"
-	
+	zeropage1 : pointer;
 	
 	@define bank2ClearVal $20
 	@define charVal $68	
@@ -152,7 +152,20 @@ begin
 	end;
 	
 end;
-	
+
+procedure InitColors();
+begin
+	zeropage1:=#screen_col_loc;
+	for y:=0 to screen_height do
+	begin
+		for x:=0 to screen_width do 
+		begin
+			zeropage1[x]:=x;
+		end;
+		zeropage1:=zeropage1+screen_width;
+	end;
+end;
+
 begin
 	
 	// Set color background
@@ -163,6 +176,7 @@ begin
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
+	InitColors();
 	//fillwithchars();
 	//waitforspace();
 	//CopyHScreen(0);
