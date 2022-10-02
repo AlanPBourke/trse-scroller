@@ -1,8 +1,21 @@
+/*from to
+311  14 Non-visible part of the top of the screen / Non-visible part of the upper border (16 lines)
+ 15  50 Visible part of the upper border (36 lines)
+ 51 250 Regular (and visible, doh!) part of the display / Screen background (200 lines)
+251 299 Visible part of the lower border (49 lines)
+300 302 Visible part of the vertical blanking interval (VBI) / Very bottom of the visible screen  (3 lines)
+303 310 Non-visible part of the vertical blanking interval (VBI) (8 lines)
+*/
+
+/* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
+/* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
+
 program SplitScroller;
-//
+@use "input/key"
 var
 	// Various
 	dx,dy,c,val,i,j, scrollsplit,val2,k,x,y : byte = 0;
+	startrow, endrow, this_col : byte;
 	scroll : byte = 0;
 	radial : integer;
 	keyin : byte = 0;
@@ -15,7 +28,7 @@ var
 	// 2x2 font included at some random position
 	font: IncBin("resources/charsets/charset_16x16.bin",@fontLoc);
 	this_char : byte;
-	
+	temp_colorCopy : array[40] of byte;
 	// Scroll shift
 	// Scroller y amplitude
 	
@@ -25,7 +38,7 @@ var
 	
 	saddr : array[25] of integer;
 	saddr2 : array[25] of integer;
-	
+	caddr : array[25] of integer;
 	
 	// Turn ON of off KERNAL (0/1)
 	@define useKernal "0"
@@ -34,11 +47,13 @@ var
 	@define bank2ClearVal $20
 	@define charVal $68	
 
+
 procedure waitforspace();
 begin
 	keyin := 0;
-	while (keyin <> KEY_SPACE) do begin
-		keyin := getkey();
+	while (keyin = 0) do begin
+		Key::Read();
+		if  Key::Pressed( Key::KSPACE )  then keyin :=1;
 	end;	
 end;
 
@@ -62,6 +77,36 @@ begin
 
 end;
 
+procedure ShiftColors(ul : byte);
+begin
+	
+	if ul = 0 then
+	begin
+		startrow := 0;
+		endrow := 12;
+	end
+	else
+	begin
+		startrow := 13;
+		endrow := 24;		
+	end;
+	
+	fori y := startrow to endrow do 
+	begin
+		for x := 0 to 39 do
+		begin
+			// col, row
+			colormemory := AddressTable( #caddr, x, y );
+			colormemory[0] := colormemory[1];
+		    colormemory[1] := this_col;
+		end;
+	end;
+
+	inc(this_col);
+	if this_col > $A then this_col := 1;	
+
+end;
+
 /*
 Switches between bank 0 and 1
 */
@@ -75,7 +120,7 @@ begin
 
 	setcharsetlocation($2800);	
 	g_currentBank := (g_currentBank + 1) & 1;
-
+	ShiftColors(1);
 end;
 
 procedure DrawColumn39();
@@ -97,10 +142,12 @@ begin
 			//addbreakpoint();
 		end;	
 		
+		// Copy top half of colour memory.
+		ShiftColors(0);
 		scroll := 7;
 		
 	end;
-	nop(1);
+	
 end;
 
 
@@ -120,15 +167,13 @@ begin
 
 	// Prints out the current text on columm 39	
 	// If scroll=1 or 3, copy upper or lower screen to the other bank
+
 	if scroll = 1 then CopyHScreen(0);
+
 	if scroll = 3 then CopyHScreen(1);
 	// End of scroll: switch banks, reset scroll
 	if (scroll = 7) then SwitchBank();
 
-	//if (scroll = 7 or scroll = 3 ) then ShiftCharsetData();	
-
-
-			
 	hideborderx(1);
 	
 	CloseIRQ();
@@ -173,6 +218,7 @@ begin
 	screen_fg_col:=black;	
 	CreateAddressTable( #saddr, $0400, 40, 25 );
 	CreateAddressTable( #saddr2, $4400, 40, 25 );
+	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
