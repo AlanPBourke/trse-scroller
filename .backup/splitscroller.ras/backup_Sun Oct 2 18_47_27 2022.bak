@@ -141,7 +141,7 @@ begin
 		end;	
 		
 		// Copy top half of colour memory.
-		ShiftColors(0);
+
 		scroll := 7;
 		
 	end;
@@ -161,11 +161,9 @@ begin
 	scrollx(scroll);
 	setregularcolormode();
 
-	DrawColumn39();
+	DrawColumn39();				// Check if a new rightmost column is needed.
 
-	// Prints out the current text on columm 39	
 	// If scroll=1 or 3, copy upper or lower screen to the other bank
-
 	if scroll = 1 then CopyHScreen(0);
 	if scroll = 3 then CopyHScreen(1);
 	// End of scroll: switch banks, reset scroll
@@ -197,14 +195,22 @@ end;
 
 procedure InitColors();
 begin
+	
+	this_color := 1;
 	zeropage1 := #screen_col_loc;
+	
 	for row := 0 to screen_height do
 	begin
+		
 		for col := 0 to screen_width do 
 		begin
-			zeropage1[col] := col;
+			zeropage1[col] := this_color;
+			inc(this_color);
+			if this_color > $A then this_color := 1;
 		end;
+		this_color := 1;
 		zeropage1 := zeropage1 + screen_width;
+	
 	end;
 end;
 
@@ -219,6 +225,7 @@ begin
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
+	fillwithchars();
 	InitColors();
 	
 	hideborderx(0);

@@ -1,0 +1,67 @@
+/*from to
+311  14 Non-visible part of the top of the screen / Non-visible part of the upper border (16 lines)
+ 15  50 Visible part of the upper border (36 lines)
+ 51 250 Regular (and visible, doh!) part of the display / Screen background (200 lines)
+251 299 Visible part of the lower border (49 lines)
+300 302 Visible part of the vertical blanking interval (VBI) / Very bottom of the visible screen  (3 lines)
+303 310 Non-visible part of the vertical blanking interval (VBI) (8 lines)
+*/
+
+/* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
+/* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
+
+program SplitScroller;
+@use "input/key"
+var
+
+	const first_vis_line : byte = 50;
+	const start_colorcopy_line : byte = 65;
+	const begin_vblank_line : byte = 245;
+
+	@define useKernal "0"
+
+	val, row, col : byte = 0;
+	scroll : byte = 7;
+
+interrupt begin_vblank();
+
+// Line 65
+interrupt start_colorcopy;
+begin
+	
+	StartIRQ(@useKernal);
+
+	if scroll = 0 then
+	begin
+		// do upper colour shift
+	end;	
+
+	RasterIRQ(begin_vblank(), begin_vblank_line, @useKernal);
+
+	CloseIRQ();
+
+end;
+
+interrupt begin_vblank;
+begin
+	
+	StartIRQ(@useKernal);
+	
+	dec(scroll);
+	
+	if (scroll <= 127) then
+	begin
+		//swap screens
+	end;	
+	
+	CloseIRQ();
+
+end;
+
+begin
+	
+	SetMemoryConfig(1, @useKernal, 0);
+	StartRasterChain(start_colorcopy(), start_colorcopy_line, @useKernal);
+	Loop();
+
+end.
