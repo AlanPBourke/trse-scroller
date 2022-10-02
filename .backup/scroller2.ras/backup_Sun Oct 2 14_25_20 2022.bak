@@ -1,6 +1,4 @@
 program MegaScroller;
-@use "tables/luminosities"
-//
 var
 	// Various
 	dx,dy,c,val,i,j, scroll,scrollsplit,val2,k : byte = 0;

@@ -13,40 +13,32 @@
 program SplitScroller;
 @use "input/key"
 var
+
+	@define charsetLoc1 	$2800
+	@define charsetLoc2 	$6800
+	@define fontLoc 		$7000
+	@define useKernal		"0"
+	@define bank2ClearVal 	$20
+	@define charVal 		$68	
+	
 	// Various
-	dx,dy,c,val,i,j, scrollsplit,val2,k,x,y : byte = 0;
-	startrow, endrow, this_col : byte;
+	val, scrollsplit, row, col : byte = 0;
+	startrow, endrow, this_color, this_char : byte;
 	scroll : byte = 0;
-	radial : integer;
+	//radial : integer;
 	keyin : byte = 0;
-	@define charsetLoc1 $2800
-	@define charsetLoc2 $6800
-	@define fontLoc $7000
+	g_currentBank:byte = 0;
+	
 	// Place charset on both bank 0 and 1
 	charset: IncBin("resources/charsets/Capcon.bin", @charsetLoc1);
 	charset1_2: IncBin("resources/charsets/Capcon.bin", @charsetLoc2);
 	// 2x2 font included at some random position
 	font: IncBin("resources/charsets/charset_16x16.bin",@fontLoc);
-	this_char : byte;
-	temp_colorCopy : array[40] of byte;
-	// Scroll shift
-	// Scroller y amplitude
-	
-	// Banking variable
-	g_currentBank:byte = 0;
-	
 	
 	saddr : array[25] of integer;
 	saddr2 : array[25] of integer;
 	caddr : array[25] of integer;
-	
-	// Turn ON of off KERNAL (0/1)
-	@define useKernal "0"
 	zeropage1 : pointer;
-	
-	@define bank2ClearVal $20
-	@define charVal $68	
-
 
 procedure waitforspace();
 begin
@@ -60,18 +52,24 @@ end;
 procedure CopyHScreen(ul_:byte);
 begin
 	
+	
 	if g_currentBank = 0 offpage then begin
 		if ul_=0 then
+			// screen 1 to screen 2
 			copyhalfscreen(^$0400 + ^520, ^$4400 -^1 + ^520, 13, 1,0)
 		else
+			// screen 2 to screen 1
 			copyhalfscreen(^$0400, ^$4400 -^1, 13, 1,0);
 		
 	end;
 	
+	
 	if g_currentBank = 1 offpage then begin
 		if ul_=0 then
+			// screen 1 to screen 2
 			copyhalfscreen(^$4400+^520, ^$0400 - ^1 + ^520, 13, 1,0)
 		else
+			// screen 2 to screen 1
 			copyhalfscreen(^$4400, ^$0400 - ^1,13, 1,0);
 	end;
 
@@ -91,19 +89,19 @@ begin
 		endrow := 24;		
 	end;
 	
-	fori y := startrow to endrow do 
+	fori row := startrow to endrow do 
 	begin
-		for x := 0 to 39 do
+		for col := 0 to 39 do
 		begin
 			// col, row
-			colormemory := AddressTable( #caddr, x, y );
+			colormemory := AddressTable( #caddr, col, row );
 			colormemory[0] := colormemory[1];
-		    colormemory[1] := this_col;
+		    colormemory[1] := this_color;
 		end;
 	end;
 
-	inc(this_col);
-	if this_col > $A then this_col := 1;	
+	inc(this_color);
+	if this_color > $A then this_color := 1;	
 
 end;
 
@@ -134,7 +132,7 @@ begin
 	if (scroll >= 127) then begin					// >= 127 means negative number (TRSE uses 2s complement with MSB set)
 		this_char := 1;
 		moveto(0, 0, val);		// ScreenMemory pointer to x, y, address high
-		for i := 0 to 25 do begin
+		for row := 0 to 25 do begin
 			screenmemory[39] := this_char;
 			screenmemory := screenmemory + screen_width;
 			inc(this_char);
@@ -143,11 +141,11 @@ begin
 		end;	
 		
 		// Copy top half of colour memory.
-		ShiftColors(0);
+
 		scroll := 7;
 		
 	end;
-		waitforspace();
+		
 end;
 
 
@@ -158,22 +156,20 @@ end;
 interrupt RasterMain();
 begin
 	StartIRQ(@useKernal);
-	
+
 	scroll := scroll - 2; // Scroll speed
 	scrollx(scroll);
 	setregularcolormode();
 
-	DrawColumn39();
+	DrawColumn39();				// Check if a new rightmost column is needed.
 
-	// Prints out the current text on columm 39	
 	// If scroll=1 or 3, copy upper or lower screen to the other bank
-
 	if scroll = 1 then CopyHScreen(0);
 	if scroll = 3 then CopyHScreen(1);
 	// End of scroll: switch banks, reset scroll
 	if (scroll = 7) then SwitchBank();
 
-	hideborderx(1);
+	hideborderx(1);			// 38 cols
 
 	CloseIRQ();
 	
@@ -184,10 +180,10 @@ begin
 	
 	this_char := 1;
 	
-	for x := 0 to 39 do begin
-		for y := 0 to 24 do begin
+	for col := 0 to 39 do begin
+		for row := 0 to 24 do begin
 	
-			MoveTo(x, y, hi(screen_char_loc));	
+			MoveTo(col, row, hi(screen_char_loc));	
 			screenmemory[0] := this_char;
 			inc(this_char);
 			if (this_char = 11) then this_char := 1;
@@ -199,21 +195,29 @@ end;
 
 procedure InitColors();
 begin
-	zeropage1:=#screen_col_loc;
-	for y:=0 to screen_height do
+	
+	this_color := 1;
+	zeropage1 := #screen_col_loc;
+	
+	for row := 0 to screen_height do
 	begin
-		for x:=0 to screen_width do 
+		
+		for col := 0 to screen_width do 
 		begin
-			zeropage1[x]:=x;
+			zeropage1[col] := this_color;
+			inc(this_color);
+			if this_color > $A then this_color := 1;
 		end;
-		zeropage1:=zeropage1+screen_width;
+		this_color := 1;
+		zeropage1 := zeropage1 + screen_width;
+	
 	end;
 end;
 
 begin
 	
 	// Set color background
-	screen_bg_col:=black;	
+	screen_bg_col:=grey;	
 	screen_fg_col:=black;	
 	CreateAddressTable( #saddr, $0400, 40, 25 );
 	CreateAddressTable( #saddr2, $4400, 40, 25 );
@@ -221,14 +225,8 @@ begin
 	// Clear screen and color memory
 	ClearScreen(@bank2ClearVal, screen_char_loc + bank_size);	// $0400 + $4000
 	ClearScreen(@bank2ClearVal, screen_char_loc);				// $0400();
+	fillwithchars();
 	InitColors();
-	//fillwithchars();
-	//waitforspace();
-	//CopyHScreen(0);
-	//CopyHScreen(1);
-	// Fill colors
-	//InitColors();	
-	// Initialize text pointer	
 	
 	hideborderx(0);
 	
