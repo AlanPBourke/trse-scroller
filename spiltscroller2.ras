@@ -21,13 +21,15 @@ var
 
 	@define useKernal "0"
 
-	val, row, col : byte = 0;
+	val, row, col, startrow, endrow : byte = 0;
+	this_color : byte = 1;
 	scroll : byte = 7;
 
 	screen_base : integer = $0400;
 	screen_backbuffer_base : integer = $0800;
 	
-
+	caddr : array[25] of integer;
+	
 interrupt begin_vblank();
 
 // Line 65
@@ -70,8 +72,8 @@ procedure swap_screens();
 begin
 	scroll := 7;
 	scrollx(scroll);
-	// swap screen
-	// color_shift_lower
+	swap_creen();	// swap screen
+	copy_colors(0); // color_shift_lower
 	// draw new column
 end;
 
@@ -92,13 +94,39 @@ begin
 	end;	
 end;
 
-procedure color_shift_lower();
+procedure copy_colors(ul : byte);
 begin
-		
+	
+	if ul = 0 then
+	begin
+		startrow := 0;
+		endrow := 12;
+	end
+	else
+	begin
+		startrow := 13;
+		endrow := 24;		
+	end;
+	
+	fori row := startrow to endrow do 
+	begin
+		for col := 0 to 39 do
+		begin
+			// col, row
+			colormemory := AddressTable( #caddr, col, row );
+			colormemory[0] := colormemory[1];
+		    colormemory[1] := this_color;
+		end;
+	end;
+
+	inc(this_color);
+	if this_color > $A then this_color := 1;	
+
 end;
 
 
 begin
+	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
 	
 	SetMemoryConfig(1, @useKernal, 0);
 	StartRasterChain(start_colorcopy(), start_colorcopy_line, @useKernal);
