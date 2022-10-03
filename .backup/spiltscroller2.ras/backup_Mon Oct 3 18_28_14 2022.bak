@@ -100,7 +100,7 @@ screen_buffer_num := (screen_buffer_num + 1) & 1;	// Flip between 0 and 1
 		screen_backbuffer_base := $0400;			
 	end;
 	
-	screen_char_loc := screen_base;
+
 end;
 
 procedure copy_colors(ul : byte);
@@ -157,13 +157,11 @@ begin
 	
 	if ul_=0 then
 	begin
-		// Copy top half to other buffer shifted left by 1
-		copyhalfscreen(#screen_base, #screen_backbuffer_base -^1, 13, 1,0);
-	end
-	else
-	begin
 		// Copy bottom half to other buffer shifted left by 1
-		copyhalfscreen(#screen_base + ^520, #screen_backbuffer_base -^1 + ^520, 13, 1,0);
+		copyhalfscreen(#screen_base, #screen_backbuffer_base -^1, 13, 1,0);
+	else
+		// Copy top half to other buffer shifted left by 1
+		copyhalfscreen(#screen_base + ^520, #screen_backbuffer_base -^1 + ^520, 13, 1,0)
 	end;
 
 

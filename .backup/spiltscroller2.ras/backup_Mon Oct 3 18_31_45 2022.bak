@@ -100,7 +100,7 @@ screen_buffer_num := (screen_buffer_num + 1) & 1;	// Flip between 0 and 1
 		screen_backbuffer_base := $0400;			
 	end;
 	
-	screen_char_loc := screen_base;
+
 end;
 
 procedure copy_colors(ul : byte);
