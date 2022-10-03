@@ -9,6 +9,7 @@
 
 /* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
 /* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
+/* https://www.pagetable.com/c64ref/6502/?tab=2#STA */
 
 program SplitScroller;
 @use "input/key"
@@ -22,6 +23,10 @@ var
 
 	val, row, col : byte = 0;
 	scroll : byte = 7;
+
+	screen_base : integer = $0400;
+	screen_backbuffer_base : integer = $0800;
+	
 
 interrupt begin_vblank();
 
@@ -72,7 +77,24 @@ end;
 
 procedure swap_screen();
 begin
+	g_currentBank := (g_currentBank + 1) & 1;	// Flip between 0 and 1
 	
+	if g_currentbank = 1 then
+	begin
+		screen_base := $0800;
+		screen_backbuffer_base := $0400;			
+	end;
+	
+	if g_currentbank = 0 then
+	begin
+		screen_base := $0400;
+		screen_backbuffer_base := $0800;			
+	end;	
+end;
+
+procedure color_shift_lower();
+begin
+		
 end;
 
 
