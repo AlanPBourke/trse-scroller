@@ -126,15 +126,14 @@ begin
 	
 	StartIRQ(@useKernal);
 	waitforraster(245);				// Too quick ATM
-
+	setregularcolormode();
+	settextmode();
 //addbreakpoint();		
 	dec(scroll);
 
 	if (scroll >= 127) then
 	begin	
 		swap_screens();					// 2's complement, >= 127 = negative
-				setregularcolormode();
-		settextmode();
 	end
 	else
 	begin

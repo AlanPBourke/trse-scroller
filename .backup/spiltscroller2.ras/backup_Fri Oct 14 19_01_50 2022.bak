@@ -129,12 +129,10 @@ begin
 
 //addbreakpoint();		
 	dec(scroll);
-
+dec(scroll);
 	if (scroll >= 127) then
 	begin	
 		swap_screens();					// 2's complement, >= 127 = negative
-				setregularcolormode();
-		settextmode();
 	end
 	else
 	begin
@@ -142,7 +140,7 @@ begin
 		scrollx(scroll);
 		
 		// Copy top half of char screen to back buffer.
-		if (scroll = 4) then
+		if (scroll = 5) then
 		begin
 			startline := 0;
 			numlines := 12;
@@ -150,7 +148,7 @@ begin
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
-		if (scroll = 2) then
+		if (scroll = 3) then
 		begin
 			startline := 12;
 			numlines := 13;
