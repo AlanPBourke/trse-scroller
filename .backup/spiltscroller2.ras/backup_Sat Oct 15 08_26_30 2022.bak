@@ -108,7 +108,9 @@ interrupt irq_line_65;
 begin
 	
 	StartIRQ(@useKernal);
-
+	
+	SetRegularColorMode();
+	
 	if (scroll = 0) then
 	begin
 		//copy_colors(0); // color_shift_upper
@@ -230,7 +232,7 @@ begin
 		current_screen := 0;	
 	end;
 
-	SetRegularColorMode();
+	//SetRegularColorMode();
 	
 	//copy_colors(1); // color_shift_lower
 	DrawColumn39ToFront();
@@ -262,10 +264,8 @@ begin
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	SetMemoryConfig(1, 0, 0);
 	setcharsetlocation($1000);
-	SetScreenLocation(screen_backbuffer_base);
-	SetRegularColorMode();
 	SetScreenLocation(screen_base);
-	SetRegularColorMode();
+	//SetRegularColorMode();
 	current_screen := 0;
 
 	fillwithchar();

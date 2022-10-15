@@ -119,6 +119,11 @@ irq_line_65
 	pha
 	asl $d019
 	; LineNumber: 112
+	; Regularcolor mode
+	lda $d016
+	and #%11101111
+	sta $d016
+	; LineNumber: 114
 	
 ; //copy_colors(0); 
 ; // color_shift_upper
@@ -129,10 +134,10 @@ irq_line_65
 	; Signed compare
 	bne irq_line_65_elsedoneblock7
 irq_line_65_ConditionalTrueBlock5: ;Main true block ;keep 
-	; LineNumber: 113
 	; LineNumber: 115
-irq_line_65_elsedoneblock7
 	; LineNumber: 117
+irq_line_65_elsedoneblock7
+	; LineNumber: 119
 	; RasterIRQ : Hook a procedure
 	lda #$f5
 	sta $d012
@@ -140,14 +145,14 @@ irq_line_65_elsedoneblock7
 	sta $fffe
 	lda #>irq_begin_vblank
 	sta $ffff
-	; LineNumber: 119
+	; LineNumber: 121
 	; CloseIRQ
 	pla
 	tay
 	pla
 	tax
 	pla
-	; LineNumber: 121
+	; LineNumber: 123
 	rti
 end_procedure_irq_line_65
 	
@@ -155,9 +160,9 @@ end_procedure_irq_line_65
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : irq_begin_vblank
 	;    Procedure type : User-defined procedure
-	; LineNumber: 125
-irq_begin_vblank
 	; LineNumber: 127
+irq_begin_vblank
+	; LineNumber: 129
 	; StartIRQ
 	pha
 	txa
@@ -165,18 +170,18 @@ irq_begin_vblank
 	tya
 	pha
 	asl $d019
-	; LineNumber: 127
+	; LineNumber: 129
 	; wait for raster
 	ldx #$f5 ; optimized, look out for bugs
 	cpx $d012
 	bne *-3
-	; LineNumber: 131
+	; LineNumber: 133
 	
 ; // Too quick ATM
 ; //addbreakpoint();		
 	; Test Inc dec D
 	dec scroll
-	; LineNumber: 133
+	; LineNumber: 135
 	; Binary clause Simplified: GREATEREQUAL
 	lda scroll
 	; Compare with pure num / var optimization
@@ -184,26 +189,16 @@ irq_begin_vblank
 	; Signed compare
 	bmi irq_begin_vblank_elseblock13
 irq_begin_vblank_ConditionalTrueBlock12: ;Main true block ;keep 
-	; LineNumber: 133
 	; LineNumber: 135
-	jsr swap_screens
-	; LineNumber: 136
-	
-; // 2's complement, >= 127 = negative
-	; Regularcolor mode
-	lda $d016
-	and #%11101111
-	sta $d016
 	; LineNumber: 137
-	; Regular text mode 
-	lda $D011
-	and #%01011111
-	sta $D011
+	jsr swap_screens
 	; LineNumber: 139
 	jmp irq_begin_vblank_elsedoneblock14
 irq_begin_vblank_elseblock13
 	; LineNumber: 140
 	; LineNumber: 142
+	
+; // 2's complement, >= 127 = negative
 	lda scroll
 	; ScrollX method
 	sta $58
