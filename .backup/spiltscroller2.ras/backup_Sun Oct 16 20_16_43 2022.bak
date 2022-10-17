@@ -49,28 +49,6 @@ procedure swap_screens();
 procedure DrawColumn39ToFront();
 procedure copy_and_shift();
 
-procedure DrawColumn39ToBack();	
-begin
-
-	// on the back buffer.
-	backbuffer_base_ptr := #screen_backbuffer_base + startline * 40;				
-
-	i := 0;
-	this_char := 65;
-	numlines := 25;
-	while (i < numlines) do
-	begin
-
-		backbuffer_base_ptr[39] := this_char;
-		backbuffer_base_ptr := backbuffer_base_ptr + $28;
-
-		inc(i);
-		inc(this_char);
-		
-	end;
-	
-end;
-
 
 procedure copy_colors(ul : byte);
 begin
@@ -128,8 +106,7 @@ begin
 	
 	StartIRQ(@useKernal);
 	waitforraster(245);				// Too quick ATM
-
-//addbreakpoint();		
+addbreakpoint();		
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -159,7 +136,7 @@ begin
 		end;
 	end;
 	
-	hideborderx(1);
+	//hideborderx(1);
 	
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
 
@@ -173,6 +150,7 @@ begin
 	screen_base_ptr := #screen_base + startline * 40;
 	backbuffer_base_ptr := #screen_backbuffer_base + startline * 40;
 
+	numlines := 20;
 	i := 0;
 	while (i < numlines) do
 	begin
@@ -198,15 +176,15 @@ procedure DrawColumn39ToFront();
 begin
 
 	// on the back buffer.
-	screen_base_ptr := #screen_base;				
-
+	//screen_base_ptr := #screen_base;				
+	// screen base ptr set by screen swap
 	i := 0;
 	this_char := 65;
 	while (i < numlines) do
 	begin
 
-		screen_base_ptr[39] := this_char;
-		screen_base_ptr := screen_base_ptr + $28;
+		current_screen_pointer[39] := this_char;
+		current_screen_pointer := current_screen_pointer + $28;
 
 		inc(i);
 		inc(this_char);
@@ -215,27 +193,55 @@ begin
 
 end;
 
+procedure DrawColumn39ToBack();	
+begin
+
+	// on the back buffer.
+	//backbuffer_base_ptr := #screen_backbuffer_base + startline * 40;				
+
+	i := 0;
+	this_char := 65;
+	numlines := 25;
+	while (i < numlines) do
+	begin
+
+		backbuffer_base_ptr[39] := this_char;
+		backbuffer_base_ptr := backbuffer_base_ptr + $28;
+
+		inc(i);
+		inc(this_char);
+		
+	end;
+	
+end;
+
+
 procedure swap_screens();
 begin
 	
+	DrawColumn39ToBack();
+addbreakpoint();
 	scroll := 7;
 	scrollx(scroll);
 
 	if (current_screen = 0) then
 	begin
 		SetScreenLocation(screen_backbuffer_base);
+		current_screen_pointer := #screen_backbuffer_base;
 		current_screen := 1;
 	end
 	else
 	begin
 		SetScreenLocation(screen_base);
+		current_screen_pointer := #screen_base;
 		current_screen := 0;	
 	end;
 
 	//SetRegularColorMode();
 	
 	//copy_colors(1); // color_shift_lower
-	DrawColumn39ToFront();
+	
+	
 
 
 end;
@@ -247,11 +253,11 @@ begin
 	begin
 		FillFast(screen_base_ptr, number_1, 127);
 		screen_base_ptr := screen_base_ptr + 128;
-		//FillFast(backbuffer_base_ptr, number_2, 127);
-		//backbuffer_base_ptr := backbuffer_base_ptr + 128;			
+		FillFast(backbuffer_base_ptr, number_2, 127);
+		backbuffer_base_ptr := backbuffer_base_ptr + 128;			
 	end;
 	FillFast(screen_base_ptr, number_1, 104);			// last bit
-	//FillFast(backbuffer_base_ptr, number_2, 104);
+	FillFast(backbuffer_base_ptr, number_2, 104);
 
 end;
 
