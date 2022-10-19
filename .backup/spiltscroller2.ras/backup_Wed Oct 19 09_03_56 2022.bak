@@ -13,7 +13,7 @@
 /* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
 
 program SplitScroller2;
-//@use "input/key"
+
 var
 
 	@define useKernal "0"
@@ -108,7 +108,7 @@ begin
 	
 	StartIRQ(@useKernal);
 	waitforraster(245);				// Too quick ATM
-//addbreakpoint();		
+		
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -134,12 +134,12 @@ begin
 			startline := 12;
 			numlines := 13;
 			copy_and_shift();
-
+			DrawColumn39ToBack();
 		end;
 	end;
 	
 	//hideborderx(1);
-	//addbreakpoint();
+	addbreakpoint();
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
 
 	CloseIRQ();
@@ -181,7 +181,7 @@ begin
 		inc(row);
 		
 	end;
-		DrawColumn39ToBack();
+		
 end;
 
 procedure DrawColumn39ToFront();	
@@ -208,11 +208,13 @@ end;
 procedure DrawColumn39ToBack();	
 begin
 
-	current_screen_pointer := #screen_backbuffer_base + startline * 40;				
+
+	if (current_screen = 0) then current_screen_pointer := #screen_backbuffer_base;
+	if (current_screen = 1) then current_screen_pointer := #screen_base;
 
 	i := 0;
 	this_char := Random();
-	while (i < numlines) do
+	while (i < 25) do
 	begin
 
 		current_screen_pointer[39] := this_char;
@@ -228,7 +230,7 @@ end;
 procedure swap_screens();
 begin
 	
-
+	
 //addbreakpoint();
 	scroll := 7;
 	scrollx(scroll);
@@ -245,24 +247,43 @@ begin
 	end;
 
 	//SetRegularColorMode();
-	//	DrawColumn39ToBack();
+	
+
 	//copy_colors(1); // color_shift_lower
 
 end;
 
-procedure fillwithchar();
+procedure fillwithchar_slow();
 begin
-	
-	fori i := 1 to 7 do
-	begin
-		FillFast(screen_base_ptr, number_0, 127);
-		screen_base_ptr := screen_base_ptr + 128;
-		FillFast(backbuffer_base_ptr, number_1, 127);
-		backbuffer_base_ptr := backbuffer_base_ptr + 128;			
-	end;
-	FillFast(screen_base_ptr, number_0, 104);			// last bit
-	FillFast(backbuffer_base_ptr, number_1, 104);
 
+	this_char := 0;
+	
+	col := 0;
+	while col <= 39 do begin
+		
+		row := 0;
+		
+		while row <= 24 do begin
+			
+			screenmemory := AddressTable( #screen_base, col, row );
+			screenmemory[0] := this_char;
+			screenmemory := AddressTable( #screen_backbuffer_base, col, row );
+			screenmemory[0] := $20;
+			inc(row);
+			
+		end;
+		inc(col);
+		inc(this_char);
+		
+		if (this_char = 11) then begin
+			this_char := 1;
+		end;
+		
+		
+	end;
+	
+	this_char := 1;
+	
 end;
 
 
@@ -273,12 +294,12 @@ begin
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	SetMemoryConfig(1, 0, 0);
-	setcharsetlocation($1000);
+	//setcharsetlocation($1000);
 	SetScreenLocation(screen_base);
-	//SetRegularColorMode();
+		poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 
-	fillwithchar();
+	fillwithchar_slow();
 	//waitforspace();
 
 	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);

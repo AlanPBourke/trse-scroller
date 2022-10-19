@@ -13,7 +13,7 @@
 /* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
 
 program SplitScroller2;
-//@use "input/key"
+@use "misc"
 var
 
 	@define useKernal "0"
@@ -48,6 +48,7 @@ procedure screen_swap();
 procedure copy_colors(ul:byte);
 procedure swap_screens();
 procedure DrawColumn39ToFront();
+procedure DrawColumn39ToBack();
 procedure copy_and_shift();
 
 
@@ -107,7 +108,7 @@ begin
 	
 	StartIRQ(@useKernal);
 	waitforraster(245);				// Too quick ATM
-//addbreakpoint();		
+		
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -133,12 +134,12 @@ begin
 			startline := 12;
 			numlines := 13;
 			copy_and_shift();
-
+			DrawColumn39ToBack();
 		end;
 	end;
 	
 	//hideborderx(1);
-	//addbreakpoint();
+	addbreakpoint();
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
 
 	CloseIRQ();
@@ -180,7 +181,7 @@ begin
 		inc(row);
 		
 	end;
-		DrawColumn39ToBack();
+		
 end;
 
 procedure DrawColumn39ToFront();	
@@ -207,11 +208,13 @@ end;
 procedure DrawColumn39ToBack();	
 begin
 
-	current_screen_pointer := #screen_backbuffer_base + startline * 40;				
+
+	if (current_screen = 0) then current_screen_pointer := #screen_backbuffer_base;
+	if (current_screen = 1) then current_screen_pointer := #screen_base;
 
 	i := 0;
 	this_char := Random();
-	while (i < numlines) do
+	while (i < 25) do
 	begin
 
 		current_screen_pointer[39] := this_char;
@@ -227,7 +230,7 @@ end;
 procedure swap_screens();
 begin
 	
-
+	
 //addbreakpoint();
 	scroll := 7;
 	scrollx(scroll);
@@ -244,7 +247,8 @@ begin
 	end;
 
 	//SetRegularColorMode();
-	//	DrawColumn39ToBack();
+	
+
 	//copy_colors(1); // color_shift_lower
 
 end;
@@ -268,16 +272,16 @@ end;
 begin
 	PreventIrQ();		// System IRQs, not mine.
 	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
-	DefineScreen();
+	//DefineScreen();
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	SetMemoryConfig(1, 0, 0);
-	setcharsetlocation($1000);
+	//setcharsetlocation($1000);
 	SetScreenLocation(screen_base);
-	//SetRegularColorMode();
+		poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 
-	fillwithchar();
+	fillwithcharslow();
 	//waitforspace();
 
 	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);
