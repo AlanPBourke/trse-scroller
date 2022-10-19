@@ -88,7 +88,7 @@ interrupt irq_line_65;
 begin
 	
 	StartIRQ(@useKernal);
-	
+
 	SetRegularColorMode();
 	
 	if (scroll = 0) then
@@ -113,6 +113,7 @@ begin
 
 	if (scroll >= 127) then
 	begin	
+		//	addbreakpoint();
 		swap_screens();					// 2's complement, >= 127 = negative
 	end
 	else
@@ -139,7 +140,7 @@ begin
 	end;
 	
 	//hideborderx(1);
-	addbreakpoint();
+
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
 
 	CloseIRQ();
@@ -184,26 +185,6 @@ begin
 		
 end;
 
-procedure DrawColumn39ToFront();	
-begin
-
-	// on the back buffer.
-	//screen_base_ptr := #screen_base;				
-	// screen base ptr set by screen swap
-	i := 0;
-	this_char := 65;
-	while (i < numlines) do
-	begin
-
-		current_screen_pointer[39] := this_char;
-		current_screen_pointer := current_screen_pointer + $28;
-
-		inc(i);
-		inc(this_char);
-		
-	end;
-
-end;
 
 procedure DrawColumn39ToBack();	
 begin
@@ -256,29 +237,31 @@ end;
 procedure fillwithchar_slow();
 begin
 
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr :=  #screen_backbuffer_base;
+		
 	this_char := 0;
 	
-	col := 0;
-	while col <= 39 do begin
+	row := 0;
+	
+	while row < 25 do
+	begin
 		
-		row := 0;
-		
-		while row <= 24 do begin
-			
-			screenmemory := AddressTable( #screen_base, col, row );
-			screenmemory[0] := this_char;
-			screenmemory := AddressTable( #screen_backbuffer_base, col, row );
-			screenmemory[0] := $20;
-			inc(row);
-			
+		col := 0;
+		while col < 40 do
+		begin
+			screen_base_ptr[col] := this_char;
+			backbuffer_base_ptr[col] := $20;
+			inc(col);
 		end;
-		inc(col);
+		
+		screen_base_ptr += 40;
+		backbuffer_base_ptr += 40;
+		
 		inc(this_char);
 		
-		if (this_char = 11) then begin
-			this_char := 1;
-		end;
-		
+		if (this_char = 11) then this_char := 1;
+		inc(row);
 		
 	end;
 	
@@ -294,9 +277,9 @@ begin
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	SetMemoryConfig(1, 0, 0);
-	//setcharsetlocation($1000);
+	setcharsetlocation($1000);
 	SetScreenLocation(screen_base);
-		poke(^$d018, 0, $17);	// Lower\upper chars
+	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 
 	fillwithchar_slow();
