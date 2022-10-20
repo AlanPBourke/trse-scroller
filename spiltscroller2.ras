@@ -20,7 +20,7 @@ var
 	
 	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
-	const begin_vblank_line : byte = 245;
+	const begin_vblank_line : byte = 251;
 	const screen_base : address = $3000;
 	const screen_backbuffer_base : address = screen_base + 1024;
 	//const screen_base : address = $0400;
@@ -47,7 +47,6 @@ interrupt irq_begin_vblank();
 procedure screen_swap();
 procedure copy_colors(ul:byte);
 procedure swap_screens();
-procedure DrawColumn39ToFront();
 procedure DrawColumn39ToBack();
 procedure copy_and_shift();
 
@@ -102,12 +101,11 @@ begin
 
 end;
 
-// vblank line starts at 245
 interrupt irq_begin_vblank;
 begin
 	
 	StartIRQ(@useKernal);
-	waitforraster(245);				// Too quick ATM
+	waitforraster(begin_vblank_line);				// Too quick ATM
 		
 	dec(scroll);
 
@@ -135,7 +133,7 @@ begin
 			startline := 12;
 			numlines := 13;
 			copy_and_shift();
-			DrawColumn39ToBack();
+
 		end;
 	end;
 	
@@ -189,9 +187,15 @@ end;
 procedure DrawColumn39ToBack();	
 begin
 
+	if (current_screen = 0) then
+	begin 
+		current_screen_pointer := #screen_base;	
+	end
+	else 	
+	begin
+		current_screen_pointer := #screen_backbuffer_base;		
+	end;
 
-	if (current_screen = 0) then current_screen_pointer := #screen_backbuffer_base;
-	if (current_screen = 1) then current_screen_pointer := #screen_base;
 
 	i := 0;
 	this_char := Random();
@@ -211,25 +215,28 @@ end;
 procedure swap_screens();
 begin
 	
-	
-//addbreakpoint();
 	scroll := 7;
 	scrollx(scroll);
 
-	if (current_screen = 0) then
+
+	// todo this properly just invert
+	if current_screen = 0 then 
 	begin
-		SetScreenLocation(screen_backbuffer_base);
 		current_screen := 1;
+		SetScreenLocation(screen_backbuffer_base);
+		
 	end
 	else
 	begin
+		current_screen := 0;
 		SetScreenLocation(screen_base);
-		current_screen := 0;	
 	end;
+	screen_bg_col := current_screen;
 
 	//SetRegularColorMode();
 	
-
+	DrawColumn39ToBack();
+	//addbreakpoint();
 	//copy_colors(1); // color_shift_lower
 
 end;
@@ -240,7 +247,7 @@ begin
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr :=  #screen_backbuffer_base;
 		
-	this_char := 0;
+	this_char := 1;
 	
 	row := 0;
 	
