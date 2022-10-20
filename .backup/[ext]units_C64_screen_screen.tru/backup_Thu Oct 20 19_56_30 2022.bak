@@ -1,0 +1,84 @@
+Unit Screen;
+var
+/*
+
+	Library for char-based screen handling
+
+*/
+
+//var
+   	p1, sp, cp : pointer;
+	i, j, x, y, c : byte;
+	i2 : integer;
+
+/**
+	Prints a single character to the screen
+**/
+procedure PrintSingleChar( i : global byte) inline;
+begin
+	sp^ := i;
+	cp^ := c;
+		// Advance poniters
+	sp := sp + 1;
+	cp := cp + 1;
+	p1 := p1 +1;
+
+end;
+
+
+/**
+	Prints a cstring text to the screen at position [p1 + y*40 + c] with color [c]
+**/
+procedure PrintCStringColor(p1 : global pointer; x, y, c : global byte);
+begin
+	sp := #screen_char_loc + y*screen_width + x;
+	cp := $D800 + y*screen_width + x;
+	
+	while (p1^<>0) do
+		PrintSingleChar(p1^);
+		
+end;
+
+/**
+	Prints a string text to the screen at position [p1 + y*40 + c] with color [c]
+**/
+procedure PrintStringColor(p1 : global pointer; x, y, c : global byte);
+begin
+	sp := #screen_char_loc + y*screen_width + x;
+	cp := $D800 + y*screen_width + x;
+	
+	while (p1^<>0) do
+	begin	
+		j := p1^;
+		if (j>64 and j<64+32) then j:=j-64;
+		PrintSingleChar(j);
+	end;
+end;
+
+
+procedure WaitForRaster( i2 : global integer); 
+begin
+	
+	asm("	
+wait_for_raster:    
+	ldx Screen_i2
+ 	cpx $d012
+    bne *-3 
+
+	lda Screen_i2+1
+	clc
+	ror
+	ror
+	
+	sta Screen_c ; temp var
+	
+	lda $d011
+	and #%10000000
+	cmp Screen_c
+	
+	bne wait_for_raster
+	");
+
+end;
+
+end.

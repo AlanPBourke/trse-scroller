@@ -14,15 +14,15 @@ EndBlock801:
 	org $810
 StartBlock810:
 	; Starting new memory block at $810
-SplitScroller2
+x_scroll
 	; LineNumber: 280
 	jmp block1
 	; LineNumber: 29
 current_screen_pointer	= $02
 	; LineNumber: 30
-screen_base_ptr	= $04
+screen_base_ptr	=  $04
 	; LineNumber: 31
-backbuffer_base_ptr	= $08
+backbuffer_base_ptr	=  $08
 	; LineNumber: 33
 row	dc.b	$00
 	; LineNumber: 33
@@ -217,10 +217,10 @@ irq_begin_vblank_elseblock14
 ; // 2's complement, >= 127 = negative
 	lda scroll
 	; ScrollX method
-	sta $58
+	sta  $58
 	lda $d016  
 	and #$F8
-	ora $58
+	ora  $58
 	sta $d016
 	; LineNumber: 123
 	; Binary clause Simplified: EQUALS
@@ -558,10 +558,10 @@ swap_screens
 	sta scroll
 	; LineNumber: 219
 	; ScrollX method
-	sta $58
+	sta  $58
 	lda $d016  
 	and #$F8
-	ora $58
+	ora  $58
 	sta $d016
 	; LineNumber: 223
 	; Binary clause Simplified: EQUALS

@@ -1,0 +1,74 @@
+unit Memory;
+var
+	useKernal:byte;
+	@donotremove keep
+	keep:byte;
+	
+	
+procedure StartIRQExtended(useKernal : global byte) inline;
+begin
+	if (useKernal=0) then
+		StartIRQ(0)
+	else
+		StartIRQ(1);	
+		
+		
+	asm("
+		lda mul16x8_num1Hi
+		pha
+		lda mul16x8_num1
+		pha
+		lda mul16x8_num2
+		pha
+	");
+	
+end;	
+
+
+procedure CloseIrqExtended() inline;
+begin
+	asm("
+		pla
+		sta mul16x8_num2
+		pla
+		sta mul16x8_num1
+		pla
+		sta mul16x8_num1Hi
+	");
+	CloseIRQ();
+end;
+
+
+procedure StartIrqMemoryMode() inline;
+begin
+	
+	asm("
+	pha
+	lda 01
+	pha
+	lda Memory_keep
+	sta 01	
+	txa
+	pha
+	tya
+	pha
+	asl $d019
+
+	");
+end;
+
+procedure CloseIrqMemoryMode() inline;
+begin
+	asm("
+	pla
+	tay
+	pla
+	tax
+	pla
+	sta $01
+	pla
+	rti
+	");
+	
+end;
+end.

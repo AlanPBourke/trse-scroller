@@ -1,0 +1,263 @@
+/*from to
+311  14 Non-visible part of the top of the screen / Non-visible part of the upper border (16 lines)
+ 15  50 Visible part of the upper border (36 lines)
+ 51 250 Regular (and visible, doh!) part of the display / Screen background (200 lines)
+251 299 Visible part of the lower border (49 lines)
+300 302 Visible part of the vertical blanking interval (VBI) / Very bottom of the visible screen  (3 lines)
+303 310 Non-visible part of the vertical blanking interval (VBI) (8 lines)
+*/
+
+/* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
+/* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
+/* https://www.pagetable.com/c64ref/6502/?tab=2#STA */
+/* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
+
+program x_scroll;
+@use "misc"
+
+var
+
+	@define useKernal "0"
+	
+	const first_vis_line : byte = 50;
+	const start_colorcopy_line : byte = 65;
+	const begin_vblank_line : byte = 251;
+
+	//const screen_base : address = $0400;
+	//const screen_backbuffer_base : address = screen_base + 1024;
+	
+	current_screen_pointer : pointer;
+
+	
+	val, startrow, endrow, current_screen, i, keyin : byte = 0;
+	number_0 : byte = $30;
+	number_1 : byte = $31;
+	startline : byte = 0;
+	numlines : byte = 0;	
+
+	offset : integer;
+
+	scroll : signed byte = 7;
+
+	caddr : array[25] of integer;
+
+	// Forward declarations.	
+	interrupt irq_begin_vblank();
+	procedure screen_swap();
+	procedure copy_colors(ul:byte);
+	procedure swap_screens();
+	procedure DrawColumn39ToBack();
+	procedure copy_and_shift();
+
+
+procedure copy_colors(ul : byte);
+begin
+	
+	if (ul = 0) then
+	begin
+		startrow := 0;
+		endrow := 12;
+	end
+	else
+	begin
+		startrow := 13;
+		endrow := 24;		
+	end;
+	
+	fori row := startrow to endrow do 
+	begin
+		for col := 0 to 39 do
+		begin
+			// col, row
+			colormemory := AddressTable( #caddr, col, row );
+			colormemory[0] := colormemory[1];
+		    colormemory[1] := this_color;
+		end;
+	end;
+
+	inc(this_color);
+	if (this_color > $A) then this_color := 1;	
+
+end;
+
+
+// Line 65
+interrupt irq_line_65;
+begin
+	
+	StartIRQ(@useKernal);
+
+	SetRegularColorMode();
+	
+	if (scroll = 0) then
+	begin
+		//copy_colors(0); // color_shift_upper
+	end;	
+
+	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
+
+	CloseIRQ();
+
+end;
+
+interrupt irq_begin_vblank;
+begin
+	
+	StartIRQ(@useKernal);
+	//waitforraster(begin_vblank_line);				// Too quick ATM
+		
+	dec(scroll);
+
+	if (scroll >= 127) then
+	begin	
+		//	addbreakpoint();
+		swap_screens();					// 2's complement, >= 127 = negative
+	end
+	else
+	begin
+
+		scrollx(scroll);
+		
+		// Copy top half of char screen to back buffer.
+		if (scroll = 4) then
+		begin
+			startline := 0;
+			numlines := 12;
+			copy_and_shift();
+		end;
+	
+		// Copy bottom half of char screen to back buffer.
+		if (scroll = 2) then
+		begin
+			startline := 12;
+			numlines := 13;
+			copy_and_shift();
+
+		end;
+	end;
+	
+	hideborderx(1);
+
+	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
+
+	CloseIRQ();
+
+end;
+
+procedure copy_and_shift();
+begin
+	
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr := #screen_backbuffer_base;
+	//addbreakpoint();
+	row := 0;
+	while (row < numlines) do
+	begin
+		
+		offset := (startline + row) * 40;	
+
+		screen_base_ptr := #screen_base + offset;
+		backbuffer_base_ptr :=  #screen_backbuffer_base + offset;
+		col := 1;
+		i := 0;
+		while (col < 40) do
+		begin
+			i := col - 1;
+			if (current_screen = 0) then
+			begin
+				backbuffer_base_ptr[i] := screen_base_ptr[col];
+			end
+			else
+			begin
+				screen_base_ptr[i] := backbuffer_base_ptr[col];
+			end;
+			inc(col);
+		end;
+
+		inc(row);
+		
+	end;
+		
+end;
+
+
+procedure DrawColumn39ToBack();	
+begin
+
+	if (current_screen = 0) then
+	begin 
+		current_screen_pointer := #screen_backbuffer_base;	
+	end
+	else 	
+	begin
+		current_screen_pointer := #screen_base;		
+	end;
+
+
+	i := 0;
+	this_char := Random();
+	while (i < 25) do
+	begin
+
+		current_screen_pointer[39] := this_char;
+		current_screen_pointer := current_screen_pointer + $28;
+
+		inc(i);
+		inc(this_char);
+		
+	end;
+end;
+
+
+procedure swap_screens();
+begin
+	
+		//addbreakpoint();
+	DrawColumn39ToBack();
+	scroll := 7;
+	scrollx(scroll);
+
+
+	// todo this properly just invert
+	if current_screen = 0 then 
+	begin
+		current_screen := 1;
+		SetScreenLocation(screen_backbuffer_base);
+		
+	end
+	else
+	begin
+		current_screen := 0;
+		SetScreenLocation(screen_base);
+	end;
+	//screen_bg_col := current_screen;
+
+	//SetRegularColorMode();
+	
+
+	//addbreakpoint();
+	//copy_colors(1); // color_shift_lower
+
+end;
+
+
+
+begin
+	PreventIrQ();		// System IRQs, not mine.
+	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
+	//DefineScreen();
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr := #screen_backbuffer_base;
+	SetMemoryConfig(1, 0, 0);
+	setcharsetlocation($1000);
+	
+	poke(^$d018, 0, $17);	// Lower\upper chars
+	current_screen := 0;
+	SetScreenLocation(screen_base);
+	fillwithchar_slow();
+	//waitforspace();
+
+	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);
+	Loop();
+
+end.
