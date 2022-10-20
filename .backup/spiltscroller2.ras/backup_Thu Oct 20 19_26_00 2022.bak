@@ -105,7 +105,7 @@ interrupt irq_begin_vblank;
 begin
 	
 	StartIRQ(@useKernal);
-	waitforraster(begin_vblank_line);				// Too quick ATM
+	//waitforraster(begin_vblank_line);				// Too quick ATM
 		
 	dec(scroll);
 
@@ -189,11 +189,11 @@ begin
 
 	if (current_screen = 0) then
 	begin 
-		current_screen_pointer := #screen_base;	
+		current_screen_pointer := #screen_backbuffer_base;	
 	end
 	else 	
 	begin
-		current_screen_pointer := #screen_backbuffer_base;		
+		current_screen_pointer := #screen_base;		
 	end;
 
 
@@ -215,6 +215,8 @@ end;
 procedure swap_screens();
 begin
 	
+		addbreakpoint();
+	DrawColumn39ToBack();
 	scroll := 7;
 	scrollx(scroll);
 
@@ -231,11 +233,11 @@ begin
 		current_screen := 0;
 		SetScreenLocation(screen_base);
 	end;
-	screen_bg_col := current_screen;
+	//screen_bg_col := current_screen;
 
 	//SetRegularColorMode();
 	
-	DrawColumn39ToBack();
+
 	//addbreakpoint();
 	//copy_colors(1); // color_shift_lower
 
@@ -285,10 +287,10 @@ begin
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	SetMemoryConfig(1, 0, 0);
 	setcharsetlocation($1000);
-	SetScreenLocation(screen_base);
+	
 	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
-
+	SetScreenLocation(screen_base);
 	fillwithchar_slow();
 	//waitforspace();
 

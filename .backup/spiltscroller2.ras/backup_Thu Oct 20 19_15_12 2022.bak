@@ -215,6 +215,7 @@ end;
 procedure swap_screens();
 begin
 	
+	DrawColumn39ToBack();
 	scroll := 7;
 	scrollx(scroll);
 
@@ -231,14 +232,14 @@ begin
 		current_screen := 0;
 		SetScreenLocation(screen_base);
 	end;
-	screen_bg_col := current_screen;
+	//screen_bg_col := current_screen;
 
 	//SetRegularColorMode();
 	
-	DrawColumn39ToBack();
+
 	//addbreakpoint();
 	//copy_colors(1); // color_shift_lower
-
+	addbreakpoint();
 end;
 
 procedure fillwithchar_slow();
@@ -285,10 +286,10 @@ begin
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	SetMemoryConfig(1, 0, 0);
 	setcharsetlocation($1000);
-	SetScreenLocation(screen_base);
+	
 	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
-
+	SetScreenLocation(screen_base);
 	fillwithchar_slow();
 	//waitforspace();
 
