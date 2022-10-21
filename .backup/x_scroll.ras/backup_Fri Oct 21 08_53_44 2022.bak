@@ -13,7 +13,6 @@
 /* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
 
 program x_scroll;
-@use "misc"
 
 var
 
@@ -22,20 +21,19 @@ var
 	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 251;
-
-	//const screen_base : address = $0400;
-	//const screen_backbuffer_base : address = screen_base + 1024;
+	const screen_base : address = $3000;
+	const screen_backbuffer_base : address = screen_base + 1024;
+	const colour_base : address = $d800;
 	
 	current_screen_pointer : pointer;
-
+	screen_base_ptr : pointer;
+	backbuffer_base_ptr : pointer;	
+	colour_base_ptr : pointer;
+	
+	offset : integer;
 	
 	val, startrow, endrow, current_screen, i, keyin : byte = 0;
-	number_0 : byte = $30;
-	number_1 : byte = $31;
-	startline : byte = 0;
-	numlines : byte = 0;	
-
-	offset : integer;
+	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
 
@@ -193,7 +191,6 @@ begin
 		current_screen_pointer := #screen_base;		
 	end;
 
-
 	i := 0;
 	this_char := Random();
 	while (i < 25) do
@@ -240,7 +237,45 @@ begin
 
 end;
 
+procedure fillwithchar_slow();
+begin
 
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr :=  #screen_backbuffer_base;
+		
+	this_char := 1;
+	this_colour := 0;
+	
+	row := 0;
+	
+	while row < 25 do
+	begin
+		
+		col := 0;
+		while col < 40 do
+		begin
+			colour_base_ptr[col] := this_colour;
+			screen_base_ptr[col] := this_char;
+			backbuffer_base_ptr[col] := $20;
+			inc(col);
+		end;
+		
+		screen_base_ptr += 40;
+		backbuffer_base_ptr += 40;
+		colour_base_ptr += 40;
+		
+		inc(this_colour);
+		inc(this_char);
+		inc(row);
+	
+		if (this_char = 11) then this_char := 1;
+		if (this_colour = 16) then this_colour := 1;
+		
+	end;
+	
+	this_char := 1;
+	
+end;
 
 begin
 	PreventIrQ();		// System IRQs, not mine.

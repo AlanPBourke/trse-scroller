@@ -1,0 +1,6 @@
+Unit vars;
+var
+	this_color, this_char : byte = 1;
+	row, col : byte = 0;
+	
+end.

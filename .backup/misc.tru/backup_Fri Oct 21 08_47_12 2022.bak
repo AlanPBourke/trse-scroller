@@ -1,13 +1,8 @@
 Unit misc;
 var
 	
-	const screen_base : address = $3000;
-	const screen_backbuffer_base : address = screen_base + 1024;
-	
-	screen_base_ptr : pointer;
-	backbuffer_base_ptr : pointer;
-	
-	this_color, this_char : byte = 1;
+
+	this_char : byte = 1;
 	row, col : byte = 0;
 	
 procedure fillwithchar_slow();

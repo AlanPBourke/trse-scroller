@@ -13,7 +13,6 @@
 /* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
 
 program x_scroll;
-@use misc;
 
 var
 
@@ -22,20 +21,18 @@ var
 	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 251;
-
-	//const screen_base : address = $0400;
-	//const screen_backbuffer_base : address = screen_base + 1024;
+	const screen_base : address = $3000;
+	const screen_backbuffer_base : address = screen_base + 1024;
 	
 	current_screen_pointer : pointer;
-
+	screen_base_ptr : pointer;
+	backbuffer_base_ptr : pointer;	
 	
 	val, startrow, endrow, current_screen, i, keyin : byte = 0;
 	number_0 : byte = $30;
 	number_1 : byte = $31;
 	startline : byte = 0;
-	numlines : byte = 0;	
-
-	offset : integer;
+	row, col, numlines,this_color  : byte = 0;	
 
 	scroll : signed byte = 7;
 
