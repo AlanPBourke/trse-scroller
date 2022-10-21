@@ -23,12 +23,9 @@ var
 	const begin_vblank_line : byte = 251;
 	const screen_base : address = $3000;
 	const screen_backbuffer_base : address = screen_base + 1024;
-	const colour_base : address = $d800;
+	const screen_colour_base : address = $d800;
 	
-	current_screen_pointer : pointer;
-	screen_base_ptr : pointer;
-	backbuffer_base_ptr : pointer;	
-	colour_base_ptr : pointer;
+	current_screen_pointer, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr: pointer;
 	
 	offset : integer;
 	
@@ -42,42 +39,10 @@ var
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
 	procedure screen_swap();
-	procedure copy_colors(ul:byte);
+	procedure copy_colors();
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
-
-
-procedure copy_colors(ul : byte);
-begin
-	
-	if (ul = 0) then
-	begin
-		startrow := 0;
-		endrow := 12;
-	end
-	else
-	begin
-		startrow := 13;
-		endrow := 24;		
-	end;
-	
-	fori row := startrow to endrow do 
-	begin
-		for col := 0 to 39 do
-		begin
-			// col, row
-			colormemory := AddressTable( #caddr, col, row );
-			colormemory[0] := colormemory[1];
-		    colormemory[1] := this_color;
-		end;
-	end;
-
-	inc(this_color);
-	if (this_color > $A) then this_color := 1;	
-
-end;
-
 
 // Line 65
 interrupt irq_line_65;
@@ -89,12 +54,34 @@ begin
 	
 	if (scroll = 0) then
 	begin
-		//copy_colors(0); // color_shift_upper
+		//copy_colors(); // color_shift_upper
 	end;	
 
 	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
-
+settextmode();
 	CloseIRQ();
+
+end;
+
+procedure copy_colors();
+begin
+	
+	row := 0;
+	
+	while (row < numlines) do
+	begin
+		offset := (startline + row) * 40;	
+		colour_base_ptr := #screen_colour_base + offset;
+		col := 1;
+		while (col < 40) do
+		begin
+			i := col - 1;
+			colour_base_ptr[i] := colour_base_ptr[col];
+			inc(col);
+		end;
+		colour_base_ptr += 40;	
+		inc(row);
+	end;
 
 end;
 
@@ -103,7 +90,7 @@ begin
 	
 	StartIRQ(@useKernal);
 	//waitforraster(begin_vblank_line);				// Too quick ATM
-		
+	
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -134,8 +121,8 @@ begin
 		end;
 	end;
 	
+	//hideborderx(1);
 	hideborderx(1);
-
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
 
 	CloseIRQ();
@@ -214,21 +201,20 @@ begin
 	scroll := 7;
 	scrollx(scroll);
 
-
 	// todo this properly just invert
-	if current_screen = 0 then 
-	begin
-		current_screen := 1;
-		SetScreenLocation(screen_backbuffer_base);
+	current_screen := (current_screen + 1) & 1;
+//	if current_screen = 0 then 
+//	begin
+//		current_screen := 1;
+//		SetScreenLocation(screen_backbuffer_base);
 		
-	end
-	else
-	begin
-		current_screen := 0;
-		SetScreenLocation(screen_base);
-	end;
-	//screen_bg_col := current_screen;
-
+//	end
+//	else
+//	begin
+//		current_screen := 0;
+//		SetScreenLocation(screen_base);
+//	end;
+	
 	//SetRegularColorMode();
 	
 
@@ -242,7 +228,8 @@ begin
 
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr :=  #screen_backbuffer_base;
-		
+	colour_base_ptr := #screen_colour_base;
+	
 	this_char := 1;
 	this_colour := 0;
 	
@@ -252,29 +239,31 @@ begin
 	begin
 		
 		col := 0;
+		this_colour := 0;
 		while col < 40 do
 		begin
-			colour_base_ptr[col] := this_colour;
+			//colour_base_ptr[col] := this_colour;
 			screen_base_ptr[col] := this_char;
 			backbuffer_base_ptr[col] := $20;
 			inc(col);
+			inc(this_colour);
+			if (this_colour = 15) then this_colour := 0;	
 		end;
 		
 		screen_base_ptr += 40;
 		backbuffer_base_ptr += 40;
 		colour_base_ptr += 40;
 		
-		inc(this_colour);
+		
 		inc(this_char);
 		inc(row);
 	
 		if (this_char = 11) then this_char := 1;
-		if (this_colour = 16) then this_colour := 1;
-		
+
 	end;
 	
 	this_char := 1;
-	
+
 end;
 
 begin
@@ -290,7 +279,7 @@ begin
 	current_screen := 0;
 	SetScreenLocation(screen_base);
 	fillwithchar_slow();
-	//waitforspace();
+	
 
 	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);
 	Loop();

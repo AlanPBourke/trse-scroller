@@ -1,0 +1,9 @@
+Unit misc;
+var
+	
+
+	this_char : byte = 1;
+	row, col : byte = 0;
+	
+
+end.
