@@ -31,6 +31,7 @@ var
 	
 	charset : IncBin("resources/UridiumChars.bin", #charset_base);
 	map : IncBin("resources/UridiumMap.bin", #map_base);
+	 
 	
 	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
@@ -115,16 +116,16 @@ begin
 		// Copy top half of char screen to back buffer.
 		if (scroll = 4) then
 		begin
-			startline := 4;
-			numlines := 8;
+			startline := 4;				// zero-based
+			numlines := 8;				// one based
 			copy_and_shift();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
 		if (scroll = 2) then
 		begin
-			startline := 13;
-			numlines := 7;
+			startline := 12;
+			numlines := 9;
 			copy_and_shift();
 
 		end;
@@ -222,13 +223,13 @@ begin
 	current_screen_ptr += (4*40);			// Start on screen row 4
 	map_ptr := #map_base + map_column;
 	
-	while (i <= 18 ) do
+	fori i := 0 to 17 do
 	begin
-		//addbreakpoint();
+
 		current_screen_ptr[39] := map_ptr[0];
 		current_screen_ptr += 40;
-		map_ptr += map_width;
-		inc(i);
+		map_ptr += map_width;		
+				//addbreakpoint();
 	
 	end;
 	
@@ -309,8 +310,13 @@ begin
 	ClearScreen($1, #screen_base);
 	ClearScreen($1, #screen_backbuffer_base);	
 	SetMultiColorMode();
-	//CopyCharSetFromRom(#charset_base);
-
+	screen_bg_col := black;
+	screen_fg_col := white;
+	screen_fg_col[1] := yellow;
+//	screen_bg_col:=black;
+//	screen_fg_col:=0;
+//	screen_fg_col[2]:=dark_grey;
+	//screen_fg_col[1]:=grey;
 	
 	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;

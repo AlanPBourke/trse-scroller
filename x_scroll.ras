@@ -31,6 +31,7 @@ var
 	
 	charset : IncBin("resources/UridiumChars.bin", #charset_base);
 	map : IncBin("resources/UridiumMap.bin", #map_base);
+	 
 	
 	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
@@ -57,7 +58,7 @@ begin
 	
 	StartIRQ(@useKernal);
 
-	SetRegularColorMode();
+	SetMultiColorMode();
 	
 	if (scroll = 0) then
 	begin
@@ -309,8 +310,14 @@ begin
 	ClearScreen($1, #screen_base);
 	ClearScreen($1, #screen_backbuffer_base);	
 	SetMultiColorMode();
-	//CopyCharSetFromRom(#charset_base);
-
+	screen_bg_col := black;
+	screen_fg_col := white;
+	screen_fg_col[1] := yellow;
+	screen_fg_col[1] := orange;
+//	screen_bg_col:=black;
+//	screen_fg_col:=0;
+//	screen_fg_col[2]:=dark_grey;
+	//screen_fg_col[1]:=grey;
 	
 	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
