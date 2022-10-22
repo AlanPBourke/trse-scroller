@@ -23,7 +23,7 @@ var
 	const begin_vblank_line : byte = 251;
 	const screen_base : address = $3000;
 	const screen_backbuffer_base : address = screen_base + 1024;
-	const screen_colour_base : address = $d800;
+	const vic_colour_base : address = $d800;
 	const charset_base : address = $2000;
 	const map_height : byte = 17;
 	const map_width : integer = 512;
@@ -80,7 +80,7 @@ begin
 	while (row < numlines) do
 	begin
 		offset := (startline + row) * 40;	
-		colour_base_ptr := #screen_colour_base + offset;
+		colour_base_ptr := #vic_colour_base + offset;
 		col := 1;
 		while (col < 40) do
 		begin
@@ -115,16 +115,16 @@ begin
 		// Copy top half of char screen to back buffer.
 		if (scroll = 4) then
 		begin
-			startline := 0;
-			numlines := 12;
+			startline := 4;
+			numlines := 8;
 			copy_and_shift();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
 		if (scroll = 2) then
 		begin
-			startline := 12;
-			numlines := 13;
+			startline := 13;
+			numlines := 7;
 			copy_and_shift();
 
 		end;
@@ -217,21 +217,19 @@ begin
 
 	// 4 blank rows, then 17 map rows, then 4 blank rows
 	// Base + column offset + (row offset * 512)
-	row := 1;
-	current_screen_ptr[39] := 1;
-	current_screen_ptr[79] := 1;
-	current_screen_ptr[119] := 1;	
-	current_screen_ptr[159] := 1;
-	current_screen_ptr += (4*40);
-	
+	i := 1;
+
+	current_screen_ptr += (4*40);			// Start on screen row 4
 	map_ptr := #map_base + map_column;
-	while (row < 18) do
+	
+	fori (i := 0 to 17) do
 	begin
 		//addbreakpoint();
 		current_screen_ptr[39] := map_ptr[0];
 		current_screen_ptr += 40;
 		map_ptr += map_width;
-		inc(row);
+		//inc(i);
+	
 	end;
 	
 	inc(map_column);
@@ -251,7 +249,7 @@ begin
 	current_screen := (current_screen + 1) & 1;
 	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
 	
-	//SetRegularColorMode();
+	SetMultiColorMode();
 	
 
 	//addbreakpoint();
@@ -264,7 +262,7 @@ begin
 
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr :=  #screen_backbuffer_base;
-	colour_base_ptr := #screen_colour_base;
+	colour_base_ptr := #vic_colour_base;
 	
 	this_char := 1;
 	this_colour := 0;
@@ -308,16 +306,17 @@ begin
 	//DefineScreen();
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
-	
-	
-	
+	ClearScreen($1, #screen_base);
+	ClearScreen($1, #screen_backbuffer_base);	
+	SetMultiColorMode();
 	//CopyCharSetFromRom(#charset_base);
 
 	
 	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 	SetScreenLocation(screen_base);
-	fillwithchar_slow();
+	
+	//fillwithchar_slow();
 	
 	SetMemoryConfig(1, 0, 0);			// Do this last.
 	setcharsetlocation(#charset_base);

@@ -15,7 +15,7 @@ EndBlock801:
 StartBlock810:
 	; Starting new memory block at $810
 x_scroll
-	; LineNumber: 310
+	; LineNumber: 303
 	jmp block1
 	; LineNumber: 32
 	; LineNumber: 33
@@ -235,14 +235,18 @@ irq_begin_vblank_ConditionalTrueBlock33: ;Main true block ;keep
 	; LineNumber: 118
 	
 ; // Copy top half of char screen to back buffer.
-	lda #$0
+	lda #$4
 	; Calling storevariable on generic assign expression
 	sta startline
 	; LineNumber: 119
-	lda #$c
+	
+; // zero-based
+	lda #$8
 	; Calling storevariable on generic assign expression
 	sta numlines
 	; LineNumber: 120
+	
+; // one based
 	jsr copy_and_shift
 	; LineNumber: 121
 irq_begin_vblank_elsedoneblock35
@@ -262,7 +266,7 @@ irq_begin_vblank_ConditionalTrueBlock39: ;Main true block ;keep
 	; Calling storevariable on generic assign expression
 	sta startline
 	; LineNumber: 127
-	lda #$d
+	lda #$9
 	; Calling storevariable on generic assign expression
 	sta numlines
 	; LineNumber: 128
@@ -508,13 +512,8 @@ DrawColumn39FromMap_elsedoneblock122
 ; // Base + column offset +(row offset * 512)
 	lda #$1
 	; Calling storevariable on generic assign expression
-	sta row
-	; LineNumber: 226
-	
-; //current_screen_ptr[39] := 1;
-; //current_screen_ptr[79] := 1;
-; //current_screen_ptr[119] := 1;	
-; //current_screen_ptr[159] := 1;
+	sta i
+	; LineNumber: 222
 	lda current_screen_ptr
 	clc
 	adc #$a0
@@ -523,7 +522,9 @@ DrawColumn39FromMap_elsedoneblock122
 	bcc DrawColumn39FromMap_WordAdd127
 	inc current_screen_ptr+1
 DrawColumn39FromMap_WordAdd127
-	; LineNumber: 228
+	; LineNumber: 223
+	
+; // Start on screen row 4
 	; Generic 16 bit op
 	; integer assignment NodeVar
 	ldy map_column+1 ; keep
@@ -546,19 +547,15 @@ DrawColumn39FromMap_wordAdd128
 	lda DrawColumn39FromMap_rightvarInteger_var130
 	sta map_ptr
 	sty map_ptr+1
-	; LineNumber: 229
-DrawColumn39FromMap_while131
-DrawColumn39FromMap_loopstart135
-	; Binary clause Simplified: LESS
-	lda row
-	; Compare with pure num / var optimization
-	cmp #$12;keep
-	bcs DrawColumn39FromMap_elsedoneblock134
-DrawColumn39FromMap_ConditionalTrueBlock132: ;Main true block ;keep 
-	; LineNumber: 230
-	; LineNumber: 232
+	; LineNumber: 234
 	
 ; //addbreakpoint();
+	lda #$0
+	; Calling storevariable on generic assign expression
+	sta i
+DrawColumn39FromMap_forloop131
+	; LineNumber: 226
+	; LineNumber: 228
 	; Load pointer array
 	ldy #$0
 	lda (map_ptr),y
@@ -566,16 +563,16 @@ DrawColumn39FromMap_ConditionalTrueBlock132: ;Main true block ;keep
 	; Storing to a pointer
 	ldy #$27
 	sta (current_screen_ptr),y
-	; LineNumber: 233
+	; LineNumber: 229
 	lda current_screen_ptr
 	clc
 	adc #$28
 	sta current_screen_ptr+0
 	; Optimization : A := A op 8 bit - var and bvar are the same - perform inc
-	bcc DrawColumn39FromMap_WordAdd141
+	bcc DrawColumn39FromMap_WordAdd140
 	inc current_screen_ptr+1
-DrawColumn39FromMap_WordAdd141
-	; LineNumber: 234
+DrawColumn39FromMap_WordAdd140
+	; LineNumber: 230
 	lda map_ptr
 	clc
 	adc #$00
@@ -583,19 +580,19 @@ DrawColumn39FromMap_WordAdd141
 	lda map_ptr+1
 	adc #$02
 	sta map_ptr+1
-	; LineNumber: 235
+	; LineNumber: 233
+DrawColumn39FromMap_forloopcounter133
+DrawColumn39FromMap_loopstart134
+	; Compare is onpage
 	; Test Inc dec D
-	inc row
-	; LineNumber: 236
-	jmp DrawColumn39FromMap_while131
-DrawColumn39FromMap_elsedoneblock134
-DrawColumn39FromMap_loopend136
-	; LineNumber: 242
-	
-; //current_screen_ptr[879] := 1;
-; //current_screen_ptr[919] := 1;
-; //current_screen_ptr[959] := 1;	
-; //current_screen_ptr[999] := 1;	
+	inc i
+	lda #$11
+	cmp i ;keep
+	bcs DrawColumn39FromMap_forloop131
+DrawColumn39FromMap_loopdone142: ;keep
+DrawColumn39FromMap_forloopend132
+DrawColumn39FromMap_loopend135
+	; LineNumber: 235
 	lda map_column
 	clc
 	adc #$01
@@ -604,7 +601,7 @@ DrawColumn39FromMap_loopend136
 	bcc DrawColumn39FromMap_WordAdd143
 	inc map_column+1
 DrawColumn39FromMap_WordAdd143
-	; LineNumber: 243
+	; LineNumber: 236
 	; Binary clause INTEGER: EQUALS
 	; Compare INTEGER with pure num / var optimization. GREATER. 
 	lda map_column+1   ; compare high bytes
@@ -615,37 +612,37 @@ DrawColumn39FromMap_WordAdd143
 	bne DrawColumn39FromMap_elsedoneblock147
 	jmp DrawColumn39FromMap_ConditionalTrueBlock145
 DrawColumn39FromMap_ConditionalTrueBlock145: ;Main true block ;keep 
-	; LineNumber: 242
+	; LineNumber: 235
 	ldy #0   ; Force integer assignment, set y = 0 for values lower than 255
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta map_column
 	sty map_column+1
 DrawColumn39FromMap_elsedoneblock147
-	; LineNumber: 245
+	; LineNumber: 238
 	rts
 end_procedure_DrawColumn39FromMap
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : swap_screens
 	;    Procedure type : User-defined procedure
-	; LineNumber: 248
+	; LineNumber: 241
 swap_screens
-	; LineNumber: 251
+	; LineNumber: 244
 	
 ; //addbreakpoint();
 	jsr DrawColumn39FromMap
-	; LineNumber: 252
+	; LineNumber: 245
 	lda #$7
 	; Calling storevariable on generic assign expression
 	sta scroll
-	; LineNumber: 253
+	; LineNumber: 246
 	; ScrollX method
 	sta $58
 	lda $d016  
 	and #$F8
 	ora $58
 	sta $d016
-	; LineNumber: 256
+	; LineNumber: 249
 	
 ; // todo this properly just invert
 	; 8 bit binop
@@ -660,33 +657,38 @@ swap_screens
 	 ; end add / sub var with constant
 	; Calling storevariable on generic assign expression
 	sta current_screen
-	; LineNumber: 257
+	; LineNumber: 250
 	; Binary clause Simplified: EQUALS
 	; Compare with pure num / var optimization
 	cmp #$1;keep
 	bne swap_screens_elseblock153
 swap_screens_ConditionalTrueBlock152: ;Main true block ;keep 
-	; LineNumber: 256
+	; LineNumber: 249
 	lda $d018
 	and #%00001111
 	ora #208
 	sta $d018
 	jmp swap_screens_elsedoneblock154
 swap_screens_elseblock153
-	; LineNumber: 256
+	; LineNumber: 249
 	lda $d018
 	and #%00001111
 	ora #192
 	sta $d018
 swap_screens_elsedoneblock154
-	; LineNumber: 265
+	; LineNumber: 252
+	; Multicolor mode
+	lda #16
+	ora $d016
+	sta $d016
+	; LineNumber: 258
 	rts
 end_procedure_swap_screens
 block1
 main_block_begin_
-	; LineNumber: 310
+	; LineNumber: 303
 	sei
-	; LineNumber: 314
+	; LineNumber: 307
 	
 ; // System IRQs, not mine.
 ; //	CreateAddressTable( #caddr, $D800, 40, 25 );   
@@ -696,11 +698,11 @@ main_block_begin_
 	ldx #$30
 	sta screen_base_ptr
 	stx screen_base_ptr+1
-	; LineNumber: 315
+	; LineNumber: 308
 	ldx #$34
 	sta backbuffer_base_ptr
 	stx backbuffer_base_ptr+1
-	; LineNumber: 316
+	; LineNumber: 309
 	; Clear screen with offset
 	lda #$1
 	ldx #$fa
@@ -711,7 +713,7 @@ MainProgram_clearloop159
 	sta $01f4+$3000,x
 	sta $02ee+$3000,x
 	bne MainProgram_clearloop159
-	; LineNumber: 316
+	; LineNumber: 309
 	; Clear screen with offset
 	lda #$1
 	ldx #$fa
@@ -722,25 +724,30 @@ MainProgram_clearloop160
 	sta $01f4+$3400,x
 	sta $02ee+$3400,x
 	bne MainProgram_clearloop160
-	; LineNumber: 321
+	; LineNumber: 311
+	; Multicolor mode
+	lda #16
+	ora $d016
+	sta $d016
+	; LineNumber: 314
 	
 ; //CopyCharSetFromRom(#charset_base);
 	; Poke
 	; Optimization: shift is zero
 	lda #$17
 	sta $d018
-	; LineNumber: 323
+	; LineNumber: 316
 	
 ; // Lower\upper chars
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta current_screen
-	; LineNumber: 324
+	; LineNumber: 317
 	lda $d018
 	and #%00001111
 	ora #192
 	sta $d018
-	; LineNumber: 327
+	; LineNumber: 320
 	
 ; //fillwithchar_slow();
 	; Set Memory Config
@@ -748,14 +755,14 @@ MainProgram_clearloop160
 	and #%11111000
 	ora #%101
 	sta $01
-	; LineNumber: 329
+	; LineNumber: 322
 	
 ; // Do this last.
 	lda $d018
 	and #%11110001
 	ora #8
 	sta $d018
-	; LineNumber: 330
+	; LineNumber: 323
 	sei
 	; Disable interrupts
 	ldy #$7f    ; $7f = %01111111
@@ -776,9 +783,9 @@ MainProgram_clearloop160
 	sta $d011
 	asl $d019
 	cli
-	; LineNumber: 331
+	; LineNumber: 324
 	jmp * ; loop like (�/%
-	; LineNumber: 333
+	; LineNumber: 326
 main_block_end_
 	; End of program
 	; Ending memory block at $810
