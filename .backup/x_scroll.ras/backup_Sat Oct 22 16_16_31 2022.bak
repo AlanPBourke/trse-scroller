@@ -24,17 +24,24 @@ var
 	const screen_base : address = $3000;
 	const screen_backbuffer_base : address = screen_base + 1024;
 	const screen_colour_base : address = $d800;
+	const charset_base : address = $2000;
+	const map_height : byte = 17;
+	const map_width : integer = 512;
+	const map_base : address = $5000;
 	
-	current_screen_pointer, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr: pointer;
+	charset : IncBin("resources/UridiumChars.bin", #charset_base);
+	map : IncBin("resources/UridiumMap.bin", #map_base);
 	
-	offset : integer;
+	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
+	
+	offset, map_column, map_offset : integer = 0;
 	
 	val, startrow, endrow, current_screen, i, keyin : byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
 
-	caddr : array[25] of integer;
+	//caddr : array[25] of integer;
 
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
@@ -54,6 +61,8 @@ begin
 	
 	if (scroll = 0) then
 	begin
+		//startline := 0;
+		//numlines := 12;
 		//copy_colors(); // color_shift_upper
 	end;	
 
@@ -123,6 +132,7 @@ begin
 	
 	//hideborderx(1);
 	hideborderx(1);
+	//addbreakpoint();
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
 
 	CloseIRQ();
@@ -171,11 +181,11 @@ begin
 
 	if (current_screen = 0) then
 	begin 
-		current_screen_pointer := #screen_backbuffer_base;	
+		current_screen_ptr := #screen_backbuffer_base;	
 	end
 	else 	
 	begin
-		current_screen_pointer := #screen_base;		
+		current_screen_ptr:= #screen_base;		
 	end;
 
 	i := 0;
@@ -183,8 +193,8 @@ begin
 	while (i < 25) do
 	begin
 
-		current_screen_pointer[39] := this_char;
-		current_screen_pointer := current_screen_pointer + $28;
+		current_screen_ptr[39] := this_char;
+		current_screen_ptr := current_screen_ptr + $28;
 
 		inc(i);
 		inc(this_char);
@@ -193,32 +203,58 @@ begin
 end;
 
 
+procedure DrawColumn39FromMap();	
+begin
+
+	if (current_screen = 0) then
+	begin 
+		current_screen_ptr := #screen_backbuffer_base;	
+	end
+	else 	
+	begin
+		current_screen_ptr := #screen_base;		
+	end;
+
+	// 4 blank rows, then 17 map rows, then 4 blank rows
+	// Base + column offset + (row offset * 512)
+	row := 1;
+	//current_screen_ptr[39] := 1;
+	//current_screen_ptr[79] := 1;
+	//current_screen_ptr[119] := 1;	
+	//current_screen_ptr[159] := 1;
+	//current_screen_ptr += (4*40);
+	
+	map_ptr := #map_base + map_column;
+	while (row < 18) do
+	begin
+		//addbreakpoint();
+		current_screen_ptr[39] := map_ptr[0];
+		current_screen_ptr += 40;
+		map_ptr += map_width;
+		inc(row);
+	end;
+	
+	//current_screen_ptr[879] := 1;
+	//current_screen_ptr[919] := 1;
+	//current_screen_ptr[959] := 1;	
+	//current_screen_ptr[999] := 1;	
+	inc(map_column);
+	if map_column = 254 then map_column := 0;
+	
+end;
+
 procedure swap_screens();
 begin
 	
 		//addbreakpoint();
-	DrawColumn39ToBack();
+	DrawColumn39FromMap();
 	scroll := 7;
 	scrollx(scroll);
 
-
 	// todo this properly just invert
 	current_screen := (current_screen + 1) & 1;
-//	if current_screen = 0 then 
-//	begin
-//		current_screen := 1;
-//		SetScreenLocation(screen_backbuffer_base);
-		
-//	end
-//	else
-//	begin
-//		current_screen := 0;
-//		SetScreenLocation(screen_base);
-//	end;
+	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
 	
-	
-screen_bg_col := current_screen;
-
 	//SetRegularColorMode();
 	
 
@@ -272,19 +308,23 @@ end;
 
 begin
 	PreventIrQ();		// System IRQs, not mine.
-	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
+//	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
 	//DefineScreen();
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
-	SetMemoryConfig(1, 0, 0);
-	setcharsetlocation($1000);
+	
+	
+	
+	//CopyCharSetFromRom(#charset_base);
+
 	
 	poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 	SetScreenLocation(screen_base);
 	fillwithchar_slow();
 	
-
+	SetMemoryConfig(1, 0, 0);			// Do this last.
+	setcharsetlocation(#charset_base);
 	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);
 	Loop();
 
