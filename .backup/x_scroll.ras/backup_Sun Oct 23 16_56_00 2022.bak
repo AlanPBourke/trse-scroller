@@ -16,9 +16,8 @@ program x_scroll;
 
 var
 
-	@define useKernal "0"
+	@define useKernal "0"	
 	
-	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
 	const screen_base : address = $3000;
@@ -35,9 +34,9 @@ var
 	
 	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
-	offset, map_column, map_offset : integer = 0;
+	offset, map_column : integer = 0;
 	
-	val, startrow, endrow, current_screen, i, keyin : byte = 0;
+	startrow, endrow, current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
@@ -51,6 +50,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
+	procedure copy_and_shift_memcpyfast();
 
 // Line 65
 interrupt irq_line_65;
@@ -117,7 +117,8 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			copy_and_shift();
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -125,8 +126,8 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			copy_and_shift();
-
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	end;
 	
@@ -174,6 +175,33 @@ begin
 		
 end;
 
+procedure copy_and_shift_memcpyfast();
+begin
+	
+	offset := startline * 40;
+	screen_base_ptr := #screen_base + offset;
+	backbuffer_base_ptr := #screen_backbuffer_base + offset;
+	screen_bg_col := blue;
+	row := 0;
+	while (row < numlines) do
+	begin
+		
+		if (current_screen = 0) then
+		begin
+			memcpyfast(screen_base_ptr, 0, backbuffer_base_ptr, 39);
+		end	
+		else
+		begin
+			memcpyfast(backbuffer_base_ptr, 0, screen_base_ptr, 39);
+		end;
+			
+		screen_base_ptr += 40;
+		backbuffer_base_ptr += 40;
+		inc(row);
+		
+	end;
+	screen_bg_col := red;
+end;
 
 procedure DrawColumn39FromMap();	
 begin
@@ -217,7 +245,6 @@ begin
 	scroll := 7;
 	scrollx(scroll);
 
-	// todo this properly just invert
 	current_screen := (current_screen + 1) & 1;
 	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
 	

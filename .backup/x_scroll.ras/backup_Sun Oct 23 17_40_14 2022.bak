@@ -16,9 +16,8 @@ program x_scroll;
 
 var
 
-	@define useKernal "0"
+	@define useKernal "0"	
 	
-	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
 	const screen_base : address = $3000;
@@ -33,11 +32,11 @@ var
 	map : IncBin("resources/UridiumMap.bin", #map_base);
 	 
 	
-	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
+	from_ptr, to_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
-	offset, map_column, map_offset : integer = 0;
+	offset, map_column : integer = 0;
 	
-	val, startrow, endrow, current_screen, i, keyin : byte = 0;
+	startrow, endrow, current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
@@ -51,6 +50,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
+	procedure copy_and_shift_memcpyfast();
 
 // Line 65
 interrupt irq_line_65;
@@ -99,8 +99,7 @@ interrupt irq_begin_vblank;
 begin
 	
 	StartIRQ(@useKernal);
-	//waitforraster(begin_vblank_line);				// Too quick ATM
-	screen_bg_col := red;
+
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -118,7 +117,8 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			copy_and_shift();
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -126,16 +126,15 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			copy_and_shift();
-
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	end;
 	
-	//hideborderx(1);
 	hideborderx(1);
-	//addbreakpoint();
+
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
-	screen_bg_col := black;
+
 	CloseIRQ();
 
 end;
@@ -176,6 +175,32 @@ begin
 		
 end;
 
+procedure copy_and_shift_memcpyfast();
+begin
+	
+	if (current_screen = 0) then
+	begin
+		from_ptr := #screen_base;
+		to_ptr :=  #screen_backbuffer_base;
+	end
+	else
+	begin
+		from_ptr := #screen_backbuffer_base;
+		to_ptr :=  #screen_base;		
+	end;
+
+	from_ptr += 1 + (startline * 40);
+	to_ptr += (startline * 40);
+	
+	row := 0;
+	while (row < numlines) do
+	begin
+		memcpyfast(from_ptr, 0, to_ptr, 39);
+		from_ptr += 40;
+		to_ptr += 40;
+		inc(row);
+	end;
+end;
 
 procedure DrawColumn39FromMap();	
 begin
@@ -219,7 +244,6 @@ begin
 	scroll := 7;
 	scrollx(scroll);
 
-	// todo this properly just invert
 	current_screen := (current_screen + 1) & 1;
 	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
 	

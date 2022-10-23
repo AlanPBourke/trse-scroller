@@ -50,6 +50,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
+	procedure copy_and_shift_memcpyfast();
 
 // Line 65
 interrupt irq_line_65;
@@ -116,7 +117,8 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			copy_and_shift();
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -124,8 +126,8 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			copy_and_shift();
-
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	end;
 	
@@ -173,6 +175,33 @@ begin
 		
 end;
 
+procedure copy_and_shift_memcpyfast();
+begin
+	
+	offset := startline * 40;
+	screen_base_ptr := #screen_base + offset;
+	backbuffer_base_ptr := #screen_backbuffer_base + offset;
+addbreakpoint();	
+	row := 0;
+	while (row < numlines) do
+	begin
+		
+		if (current_screen = 0) then
+		begin
+			memcpyfast(screen_base_ptr, 0, backbuffer_base_ptr, 39);
+		end	
+		else
+		begin
+			memcpyfast(backbuffer_base_ptr, 0, screen_base_ptr, 39);
+		end;
+			
+		screen_base_ptr += 40;
+		backbuffer_base_ptr += 40;
+		inc(row);
+		
+	end;
+	
+end;
 
 procedure DrawColumn39FromMap();	
 begin
@@ -216,7 +245,6 @@ begin
 	scroll := 7;
 	scrollx(scroll);
 
-	// todo this properly just invert
 	current_screen := (current_screen + 1) & 1;
 	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
 	

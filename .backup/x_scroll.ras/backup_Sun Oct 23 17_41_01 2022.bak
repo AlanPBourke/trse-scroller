@@ -32,11 +32,11 @@ var
 	map : IncBin("resources/UridiumMap.bin", #map_base);
 	 
 	
-	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
+	from_ptr, to_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
 	offset, map_column : integer = 0;
 	
-	val, startrow, endrow, current_screen: byte = 0;
+	startrow, endrow, current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
@@ -50,6 +50,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
+	procedure copy_and_shift_memcpyfast();
 
 // Line 65
 interrupt irq_line_65;
@@ -116,7 +117,8 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			copy_and_shift();
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -124,8 +126,8 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			copy_and_shift();
-
+			//copy_and_shift();
+			copy_and_shift_memcpyfast();
 		end;
 	end;
 	
@@ -173,31 +175,57 @@ begin
 		
 end;
 
+procedure copy_and_shift_memcpyfast();
+begin
+	
+	if (current_screen = 0) then
+	begin
+		from_ptr := #screen_base;
+		to_ptr :=  #screen_backbuffer_base;
+	end
+	else
+	begin
+		from_ptr := #screen_backbuffer_base;
+		to_ptr :=  #screen_base;		
+	end;
+
+	from_ptr += 1 + (startline * 40);
+	to_ptr += (startline * 40);
+	
+	row := 0;
+	while (row < numlines) do
+	begin
+		memcpyfast(from_ptr, 0, to_ptr, 39);
+		from_ptr += 40;
+		to_ptr += 40;
+		inc(row);
+	end;
+end;
 
 procedure DrawColumn39FromMap();	
 begin
 
 	if (current_screen = 0) then
 	begin 
-		current_screen_ptr := #screen_backbuffer_base;	
+		to_ptr := #screen_backbuffer_base;	
 	end
 	else 	
 	begin
-		current_screen_ptr := #screen_base;		
+		to_ptr := #screen_base;		
 	end;
 
 	// 4 blank rows, then 17 map rows, then 4 blank rows
 	// Base + column offset + (row offset * 512)
 	i := 1;
 
-	current_screen_ptr += (4*40);			// Start on screen row 4
+	to_ptr += (4*40);			// Start on screen row 4
 	map_ptr := #map_base + map_column;
 	
 	fori i := 0 to 17 do
 	begin
 
-		current_screen_ptr[39] := map_ptr[0];
-		current_screen_ptr += 40;
+		to_ptr[39] := map_ptr[0];
+		to_ptr += 40;
 		map_ptr += map_width;		
 				//addbreakpoint();
 	
@@ -216,7 +244,6 @@ begin
 	scroll := 7;
 	scrollx(scroll);
 
-	// todo this properly just invert
 	current_screen := (current_screen + 1) & 1;
 	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
 	
