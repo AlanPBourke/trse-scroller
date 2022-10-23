@@ -11,7 +11,7 @@
 /* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
 /* https://www.pagetable.com/c64ref/6502/?tab=2#STA */
 /* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
-
+/* https://github.com/mwenge/uridium */
 program x_scroll;
 
 var
@@ -20,7 +20,7 @@ var
 	
 	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
-	const begin_vblank_line : byte = 251;
+	const begin_vblank_line : byte = 245;
 	const screen_base : address = $3000;
 	const screen_backbuffer_base : address = screen_base + 1024;
 	const vic_colour_base : address = $d800;
@@ -64,7 +64,7 @@ begin
 	begin
 		//startline := 0;
 		//numlines := 12;
-		//copy_colors(); // color_shift_upper
+		copy_colors(); // color_shift_upper
 	end;	
 
 	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
@@ -302,24 +302,25 @@ begin
 end;
 
 begin
+
 	PreventIrQ();		// System IRQs, not mine.
-//	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
-	//DefineScreen();
+
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
-	ClearScreen($1, #screen_base);
-	ClearScreen($1, #screen_backbuffer_base);	
-	SetMultiColorMode();
+	ClearScreen(1, #screen_base);
+	ClearScreen(1, #screen_backbuffer_base);	
+	
 	screen_bg_col := black;
 	screen_fg_col := white;
 	screen_fg_col[1] := yellow;
-	screen_fg_col[1] := orange;
+	screen_fg_col[2] := orange;
+	SetMultiColorMode();
 //	screen_bg_col:=black;
 //	screen_fg_col:=0;
 //	screen_fg_col[2]:=dark_grey;
 	//screen_fg_col[1]:=grey;
 	
-	poke(^$d018, 0, $17);	// Lower\upper chars
+	//poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 	SetScreenLocation(screen_base);
 	
