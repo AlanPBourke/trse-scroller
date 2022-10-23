@@ -17,6 +17,7 @@ program x_scroll;
 var
 
 	@define useKernal "0"	
+	@define unroll 0
 	
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
@@ -50,7 +51,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
-	procedure copy_and_shift_memcpyfast();
+	
 
 // Line 65
 interrupt irq_line_65;
@@ -117,8 +118,7 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			//copy_and_shift();
-			copy_and_shift_memcpyfast();
+			copy_and_shift();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -126,8 +126,7 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			//copy_and_shift();
-			copy_and_shift_memcpyfast();
+			copy_and_shift();
 		end;
 	end;
 	
@@ -140,42 +139,6 @@ begin
 end;
 
 procedure copy_and_shift();
-begin
-	
-	screen_base_ptr := #screen_base;
-	backbuffer_base_ptr := #screen_backbuffer_base;
-	//addbreakpoint();
-	row := 0;
-	while (row < numlines) do
-	begin
-		
-		offset := (startline + row) * 40;	
-
-		screen_base_ptr := #screen_base + offset;
-		backbuffer_base_ptr :=  #screen_backbuffer_base + offset;
-		col := 1;
-		i := 0;
-		while (col < 40) do
-		begin
-			i := col - 1;
-			if (current_screen = 0) then
-			begin
-				backbuffer_base_ptr[i] := screen_base_ptr[col];
-			end
-			else
-			begin
-				screen_base_ptr[i] := backbuffer_base_ptr[col];
-			end;
-			inc(col);
-		end;
-
-		inc(row);
-		
-	end;
-		
-end;
-
-procedure copy_and_shift_memcpyfast();
 begin
 	
 	if (current_screen = 0) then
@@ -195,7 +158,13 @@ begin
 	row := 0;
 	while (row < numlines) do
 	begin
-		memcpyfast(from_ptr, 0, to_ptr, 39);
+		
+		@if unroll = 0
+			memcpyfast(from_ptr, 0, to_ptr, 39);
+		@else
+			memcpyunroll(from_ptr, 0, to_ptr, 39);
+		@endif
+		
 		from_ptr += 40;
 		to_ptr += 40;
 		inc(row);

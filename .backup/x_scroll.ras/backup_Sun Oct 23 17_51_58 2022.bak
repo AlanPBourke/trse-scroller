@@ -17,31 +17,31 @@ program x_scroll;
 var
 
 	@define useKernal "0"	
+	@define unroll 0				// -- Set to 1 to use unrolled loop in screen copy.
 	
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
-	const screen_base : address = $3000;
-	const screen_backbuffer_base : address = screen_base + 1024;
+
 	const vic_colour_base : address = $d800;
 	const charset_base : address = $2000;
 	const map_height : byte = 17;
 	const map_width : integer = 512;
 	const map_base : address = $5000;
 	
-	charset : IncBin("resources/UridiumChars.bin", #charset_base);
-	map : IncBin("resources/UridiumMap.bin", #map_base);
-	 
+	const screen_base : address = $3000;
+	const screen_backbuffer_base : address = screen_base + 1024;
 	
-	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
+	charset : IncBin("resources/UridiumChars.bin", #charset_base);
+	map : IncBin("resources/UridiumMap.bin", #map_base);	 
+	
+	from_ptr, to_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
 	offset, map_column : integer = 0;
 	
-	startrow, endrow, current_screen, i: byte = 0;
+	current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
-
-	//caddr : array[25] of integer;
 
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
@@ -50,7 +50,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
-	procedure copy_and_shift_memcpyfast();
+	
 
 // Line 65
 interrupt irq_line_65;
@@ -117,8 +117,7 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			//copy_and_shift();
-			copy_and_shift_memcpyfast();
+			copy_and_shift();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -126,8 +125,7 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			//copy_and_shift();
-			copy_and_shift_memcpyfast();
+			copy_and_shift();
 		end;
 	end;
 	
@@ -142,65 +140,34 @@ end;
 procedure copy_and_shift();
 begin
 	
-	screen_base_ptr := #screen_base;
-	backbuffer_base_ptr := #screen_backbuffer_base;
-	//addbreakpoint();
-	row := 0;
-	while (row < numlines) do
+	if (current_screen = 0) then
 	begin
-		
-		offset := (startline + row) * 40;	
-
-		screen_base_ptr := #screen_base + offset;
-		backbuffer_base_ptr :=  #screen_backbuffer_base + offset;
-		col := 1;
-		i := 0;
-		while (col < 40) do
-		begin
-			i := col - 1;
-			if (current_screen = 0) then
-			begin
-				backbuffer_base_ptr[i] := screen_base_ptr[col];
-			end
-			else
-			begin
-				screen_base_ptr[i] := backbuffer_base_ptr[col];
-			end;
-			inc(col);
-		end;
-
-		inc(row);
-		
+		from_ptr := #screen_base;
+		to_ptr :=  #screen_backbuffer_base;
+	end
+	else
+	begin
+		from_ptr := #screen_backbuffer_base;
+		to_ptr :=  #screen_base;		
 	end;
-		
-end;
 
-procedure copy_and_shift_memcpyfast();
-begin
-	
-	offset := startline * 40;
-	screen_base_ptr := #screen_base + offset;
-	backbuffer_base_ptr := #screen_backbuffer_base + offset;
+	from_ptr += 1 + (startline * 40);
+	to_ptr += (startline * 40);
 	
 	row := 0;
 	while (row < numlines) do
 	begin
 		
-		if (current_screen = 0) then
-		begin
-			memcpyfast(screen_base_ptr, 0, backbuffer_base_ptr, 39);
-		end	
-		else
-		begin
-			memcpyfast(backbuffer_base_ptr, 0, screen_base_ptr, 39);
-		end;
-			
-		screen_base_ptr += 40;
-		backbuffer_base_ptr += 40;
-		inc(row);
+		@if unroll = 0
+			memcpyfast(from_ptr, 0, to_ptr, 39);
+		@else
+			memcpyunroll(from_ptr, 0, to_ptr, 39);
+		@endif
 		
+		from_ptr += 40;
+		to_ptr += 40;
+		inc(row);
 	end;
-	
 end;
 
 procedure DrawColumn39FromMap();	
@@ -208,25 +175,25 @@ begin
 
 	if (current_screen = 0) then
 	begin 
-		current_screen_ptr := #screen_backbuffer_base;	
+		to_ptr := #screen_backbuffer_base;	
 	end
 	else 	
 	begin
-		current_screen_ptr := #screen_base;		
+		to_ptr := #screen_base;		
 	end;
 
 	// 4 blank rows, then 17 map rows, then 4 blank rows
 	// Base + column offset + (row offset * 512)
 	i := 1;
 
-	current_screen_ptr += (4*40);			// Start on screen row 4
+	to_ptr += (4*40);			// Start on screen row 4
 	map_ptr := #map_base + map_column;
 	
 	fori i := 0 to 17 do
 	begin
 
-		current_screen_ptr[39] := map_ptr[0];
-		current_screen_ptr += 40;
+		to_ptr[39] := map_ptr[0];
+		to_ptr += 40;
 		map_ptr += map_width;		
 				//addbreakpoint();
 	

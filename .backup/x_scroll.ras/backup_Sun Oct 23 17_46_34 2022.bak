@@ -17,6 +17,7 @@ program x_scroll;
 var
 
 	@define useKernal "0"	
+	@define unroll 1
 	
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
@@ -32,7 +33,7 @@ var
 	map : IncBin("resources/UridiumMap.bin", #map_base);
 	 
 	
-	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
+	from_ptr, to_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
 	offset, map_column : integer = 0;
 	
@@ -142,65 +143,32 @@ end;
 procedure copy_and_shift();
 begin
 	
-	screen_base_ptr := #screen_base;
-	backbuffer_base_ptr := #screen_backbuffer_base;
-	//addbreakpoint();
-	row := 0;
-	while (row < numlines) do
+	if (current_screen = 0) then
 	begin
-		
-		offset := (startline + row) * 40;	
-
-		screen_base_ptr := #screen_base + offset;
-		backbuffer_base_ptr :=  #screen_backbuffer_base + offset;
-		col := 1;
-		i := 0;
-		while (col < 40) do
-		begin
-			i := col - 1;
-			if (current_screen = 0) then
-			begin
-				backbuffer_base_ptr[i] := screen_base_ptr[col];
-			end
-			else
-			begin
-				screen_base_ptr[i] := backbuffer_base_ptr[col];
-			end;
-			inc(col);
-		end;
-
-		inc(row);
-		
+		from_ptr := #screen_base;
+		to_ptr :=  #screen_backbuffer_base;
+	end
+	else
+	begin
+		from_ptr := #screen_backbuffer_base;
+		to_ptr :=  #screen_base;		
 	end;
-		
-end;
 
-procedure copy_and_shift_memcpyfast();
-begin
+	from_ptr += 1 + (startline * 40);
+	to_ptr += (startline * 40);
 	
-	offset := startline * 40;
-	screen_base_ptr := #screen_base + offset;
-	backbuffer_base_ptr := #screen_backbuffer_base + offset;
-	screen_bg_col := blue;
 	row := 0;
 	while (row < numlines) do
 	begin
-		
-		if (current_screen = 0) then
-		begin
-			memcpyfast(screen_base_ptr, 0, backbuffer_base_ptr, 39);
-		end	
-		else
-		begin
-			memcpyfast(backbuffer_base_ptr, 0, screen_base_ptr, 39);
-		end;
-			
-		screen_base_ptr += 40;
-		backbuffer_base_ptr += 40;
+		@if unroll = 0
+			memcpyfast(from_ptr, 0, to_ptr, 39);
+		@else
+			memcpyfastunroll(from_ptr, 0, to_ptr, 39);
+		@endif
+		from_ptr += 40;
+		to_ptr += 40;
 		inc(row);
-		
 	end;
-	screen_bg_col := red;
 end;
 
 procedure DrawColumn39FromMap();	
@@ -208,25 +176,25 @@ begin
 
 	if (current_screen = 0) then
 	begin 
-		current_screen_ptr := #screen_backbuffer_base;	
+		to_ptr := #screen_backbuffer_base;	
 	end
 	else 	
 	begin
-		current_screen_ptr := #screen_base;		
+		to_ptr := #screen_base;		
 	end;
 
 	// 4 blank rows, then 17 map rows, then 4 blank rows
 	// Base + column offset + (row offset * 512)
 	i := 1;
 
-	current_screen_ptr += (4*40);			// Start on screen row 4
+	to_ptr += (4*40);			// Start on screen row 4
 	map_ptr := #map_base + map_column;
 	
 	fori i := 0 to 17 do
 	begin
 
-		current_screen_ptr[39] := map_ptr[0];
-		current_screen_ptr += 40;
+		to_ptr[39] := map_ptr[0];
+		to_ptr += 40;
 		map_ptr += map_width;		
 				//addbreakpoint();
 	
