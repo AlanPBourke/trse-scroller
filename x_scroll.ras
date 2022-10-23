@@ -19,7 +19,7 @@ var
 	@define useKernal "0"	
 	@define unroll 0				// -- Set to 1 to use unrolled loop in screen copy.
 	
-	const start_colorcopy_line : byte = 65;
+	const start_colorcopy_line: byte = 65;
 	const begin_vblank_line : byte = 245;
 
 	const vic_colour_base : address = $d800;
