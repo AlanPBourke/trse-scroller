@@ -19,7 +19,7 @@ var
 	@define useKernal "0"	
 	@define unroll 0				// -- Set to 1 to use unrolled loop in screen copy.
 	
-	const start_colorcopy_line : byte = 65;
+	const start_colorcopy_line: byte = 65;
 	const begin_vblank_line : byte = 245;
 
 	const vic_colour_base : address = $d800;
@@ -206,14 +206,7 @@ end;
 procedure DrawColumn39FromMap();	
 begin
 
-	if (current_screen = 0) then
-	begin 
-		to_ptr := #screen_backbuffer_base;	
-	end
-	else 	
-	begin
-		to_ptr := #screen_base;		
-	end;
+	if (current_screen = 0) then to_ptr := #screen_backbuffer_base else to_ptr := #screen_base;		
 
 	// 4 blank rows, then 17 map rows, then 4 blank rows.
 	i := 1;

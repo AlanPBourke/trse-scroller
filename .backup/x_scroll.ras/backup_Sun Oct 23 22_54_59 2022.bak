@@ -17,9 +17,9 @@ program x_scroll;
 var
 
 	@define useKernal "0"	
-	@define unroll 1				// -- Set to 1 to use unrolled loop in screen copy.
+	@define unroll 0				// -- Set to 1 to use unrolled loop in screen copy.
 	
-	const start_colorcopy_line : byte = 65;
+	const start_colorcopy_line: byte = 65;
 	const begin_vblank_line : byte = 245;
 
 	const vic_colour_base : address = $d800;
@@ -41,7 +41,7 @@ var
 	current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
-	scroll : signed byte = 7;
+	scroll : byte = 7;
 
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
@@ -117,8 +117,8 @@ begin
 	StartIRQ(@useKernal);
 
 	dec(scroll);
-
-	// 2's complement, >= 127 = negative
+	dec(scroll);
+	// 2's complement, >= 127 means < 0
 	if (scroll >= 127) then
 	begin	
 		swap_screens();					
@@ -129,15 +129,15 @@ begin
 		scrollx(scroll);
 		
 		// Copy top half of char screen to back buffer.
-		if (scroll = 4) then
+		if (scroll = 5) then
 		begin
 			startline := 4;				// zero-based
-			numlines := 8;				// one based
+			numlines := 8;				// one-based
 			copy_and_shift();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
-		if (scroll = 2) then
+		if (scroll = 3) then
 		begin
 			startline := 12;
 			numlines := 9;
@@ -174,15 +174,15 @@ begin
 		to_ptr :=  #screen_base;		
 	end;
 
-	from_ptr += 1 + (startline * 40);		// Start copying chars 1 .. 40 from front 
-											// to chars 0 .. 39 on back.
+	// Move down to start row.
+	from_ptr += 1 + (startline * 40);		// Start copying chars positions 1 .. 40 from front 
+											// to char positions  0 .. 39 on back.
 	to_ptr += (startline * 40);
 	
 	row := 0;
 	while (row < numlines) do
 	begin
-		
-		// Doesn't seem to affect code size in this instance ...
+
 		@if unroll = 0
 			memcpyfast(from_ptr, 0, to_ptr, 39);
 		@else
@@ -191,7 +191,9 @@ begin
 		
 		from_ptr += 40;
 		to_ptr += 40;
+		
 		inc(row);
+		
 	end;
 end;
 
@@ -204,20 +206,15 @@ end;
 procedure DrawColumn39FromMap();	
 begin
 
-	if (current_screen = 0) then
-	begin 
-		to_ptr := #screen_backbuffer_base;	
-	end
-	else 	
-	begin
+	if (current_screen = 0) then 
+		to_ptr := #screen_backbuffer_base 
+	else 
 		to_ptr := #screen_base;		
-	end;
 
-	// 4 blank rows, then 17 map rows, then 4 blank rows
-	// Base + column offset + (row offset * 512)
+	// 4 blank rows, then 17 map rows, then 4 blank rows.
 	i := 1;
 
-	to_ptr += (4*40);			// Start on screen row 4
+	to_ptr += (4*40);					// Start on screen row 4
 	map_ptr := #map_base + map_column;
 	
 	fori i := 0 to 17 do
@@ -242,19 +239,19 @@ end;
 procedure swap_screens();
 begin
 	
-		//addbreakpoint();
 	DrawColumn39FromMap();
 	scroll := 7;
 	scrollx(scroll);
 
 	current_screen := (current_screen + 1) & 1;
-	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
+	if current_screen = 1 then 
+		SetScreenLocation(screen_backbuffer_base) 
+	else 
+		SetScreenLocation(screen_base);
 	
 	SetMultiColorMode();
-	
 
-	//addbreakpoint();
-	//copy_colors(1); // color_shift_lower
+	//copy_colors(1);
 
 end;
 
@@ -264,7 +261,8 @@ end;
 begin
 
 	PreventIrQ();		// System IRQs, not mine.
-
+	DisableCIAInterrupts();
+	
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	ClearScreen(1, #screen_base);

@@ -15,7 +15,7 @@ EndBlock801:
 StartBlock810:
 	; Starting new memory block at $810
 x_scroll
-	; LineNumber: 262
+	; LineNumber: 261
 	jmp block1
 	; LineNumber: 34
 	; LineNumber: 35
@@ -137,7 +137,6 @@ irq_line_65
 	clc
 	lda scroll
 	; cmp #$00 ignored
-	; Signed compare
 	bne irq_line_65_elsedoneblock7
 irq_line_65_ConditionalTrueBlock5: ;Main true block ;keep 
 	; LineNumber: 64
@@ -193,8 +192,7 @@ irq_begin_vblank
 	lda scroll
 	; Compare with pure num / var optimization
 	cmp #$7f;keep
-	; Signed compare
-	bmi irq_begin_vblank_elseblock13
+	bcc irq_begin_vblank_elseblock13
 irq_begin_vblank_ConditionalTrueBlock12: ;Main true block ;keep 
 	; LineNumber: 122
 	; LineNumber: 124
@@ -218,7 +216,6 @@ irq_begin_vblank_elseblock13
 	lda scroll
 	; Compare with pure num / var optimization
 	cmp #$4;keep
-	; Signed compare
 	bne irq_begin_vblank_elsedoneblock34
 irq_begin_vblank_ConditionalTrueBlock32: ;Main true block ;keep 
 	; LineNumber: 133
@@ -245,7 +242,6 @@ irq_begin_vblank_elsedoneblock34
 	lda scroll
 	; Compare with pure num / var optimization
 	cmp #$2;keep
-	; Signed compare
 	bne irq_begin_vblank_elsedoneblock40
 irq_begin_vblank_ConditionalTrueBlock38: ;Main true block ;keep 
 	; LineNumber: 141
@@ -483,29 +479,25 @@ DrawColumn39FromMap
 	bne DrawColumn39FromMap_elseblock78
 DrawColumn39FromMap_ConditionalTrueBlock77: ;Main true block ;keep 
 	; LineNumber: 209
-	; LineNumber: 211
 	lda #$00
 	ldx #$34
 	sta to_ptr
 	stx to_ptr+1
-	; LineNumber: 213
 	jmp DrawColumn39FromMap_elsedoneblock79
 DrawColumn39FromMap_elseblock78
-	; LineNumber: 214
-	; LineNumber: 215
+	; LineNumber: 211
 	lda #$00
 	ldx #$30
 	sta to_ptr
 	stx to_ptr+1
-	; LineNumber: 216
 DrawColumn39FromMap_elsedoneblock79
-	; LineNumber: 219
+	; LineNumber: 215
 	
 ; // 4 blank rows, then 17 map rows, then 4 blank rows.
 	lda #$1
 	; Calling storevariable on generic assign expression
 	sta i
-	; LineNumber: 221
+	; LineNumber: 217
 	lda to_ptr
 	clc
 	adc #$a0
@@ -514,7 +506,7 @@ DrawColumn39FromMap_elsedoneblock79
 	bcc DrawColumn39FromMap_WordAdd84
 	inc to_ptr+1
 DrawColumn39FromMap_WordAdd84
-	; LineNumber: 222
+	; LineNumber: 218
 	
 ; // Start on screen row 4
 	; Generic 16 bit op
@@ -539,13 +531,13 @@ DrawColumn39FromMap_wordAdd85
 	lda DrawColumn39FromMap_rightvarInteger_var87
 	sta map_ptr
 	sty map_ptr+1
-	; LineNumber: 232
+	; LineNumber: 228
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta i
 DrawColumn39FromMap_forloop88
-	; LineNumber: 225
-	; LineNumber: 227
+	; LineNumber: 221
+	; LineNumber: 223
 	; Load pointer array
 	ldy #$0
 	lda (map_ptr),y
@@ -553,7 +545,7 @@ DrawColumn39FromMap_forloop88
 	; Storing to a pointer
 	ldy #$27
 	sta (to_ptr),y
-	; LineNumber: 228
+	; LineNumber: 224
 	lda to_ptr
 	clc
 	adc #$28
@@ -562,7 +554,7 @@ DrawColumn39FromMap_forloop88
 	bcc DrawColumn39FromMap_WordAdd97
 	inc to_ptr+1
 DrawColumn39FromMap_WordAdd97
-	; LineNumber: 229
+	; LineNumber: 225
 	lda map_ptr
 	clc
 	adc #$00
@@ -570,7 +562,7 @@ DrawColumn39FromMap_WordAdd97
 	lda map_ptr+1
 	adc #$02
 	sta map_ptr+1
-	; LineNumber: 231
+	; LineNumber: 227
 DrawColumn39FromMap_forloopcounter90
 DrawColumn39FromMap_loopstart91
 	; Compare is onpage
@@ -582,7 +574,7 @@ DrawColumn39FromMap_loopstart91
 DrawColumn39FromMap_loopdone99: ;keep
 DrawColumn39FromMap_forloopend89
 DrawColumn39FromMap_loopend92
-	; LineNumber: 233
+	; LineNumber: 229
 	lda map_column
 	clc
 	adc #$01
@@ -591,7 +583,7 @@ DrawColumn39FromMap_loopend92
 	bcc DrawColumn39FromMap_WordAdd100
 	inc map_column+1
 DrawColumn39FromMap_WordAdd100
-	; LineNumber: 234
+	; LineNumber: 230
 	; Binary clause INTEGER: EQUALS
 	; Compare INTEGER with pure num / var optimization. GREATER. 
 	lda map_column+1   ; compare high bytes
@@ -602,14 +594,14 @@ DrawColumn39FromMap_WordAdd100
 	bne DrawColumn39FromMap_elsedoneblock104
 	jmp DrawColumn39FromMap_ConditionalTrueBlock102
 DrawColumn39FromMap_ConditionalTrueBlock102: ;Main true block ;keep 
-	; LineNumber: 233
+	; LineNumber: 229
 	ldy #0   ; Force integer assignment, set y = 0 for values lower than 255
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta map_column
 	sty map_column+1
 DrawColumn39FromMap_elsedoneblock104
-	; LineNumber: 236
+	; LineNumber: 232
 	rts
 end_procedure_DrawColumn39FromMap
 	
@@ -621,22 +613,22 @@ end_procedure_DrawColumn39FromMap
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : swap_screens
 	;    Procedure type : User-defined procedure
-	; LineNumber: 244
+	; LineNumber: 240
 swap_screens
-	; LineNumber: 246
+	; LineNumber: 242
 	jsr DrawColumn39FromMap
-	; LineNumber: 247
+	; LineNumber: 243
 	lda #$7
 	; Calling storevariable on generic assign expression
 	sta scroll
-	; LineNumber: 248
+	; LineNumber: 244
 	; ScrollX method
 	sta $58
 	lda $d016  
 	and #$F8
 	ora $58
 	sta $d016
-	; LineNumber: 250
+	; LineNumber: 246
 	; 8 bit binop
 	; Add/sub where right value is constant number
 	; 8 bit binop
@@ -649,45 +641,50 @@ swap_screens
 	 ; end add / sub var with constant
 	; Calling storevariable on generic assign expression
 	sta current_screen
-	; LineNumber: 251
+	; LineNumber: 247
 	; Binary clause Simplified: EQUALS
 	; Compare with pure num / var optimization
 	cmp #$1;keep
 	bne swap_screens_elseblock110
 swap_screens_ConditionalTrueBlock109: ;Main true block ;keep 
-	; LineNumber: 250
+	; LineNumber: 247
 	lda $d018
 	and #%00001111
 	ora #208
 	sta $d018
 	jmp swap_screens_elsedoneblock111
 swap_screens_elseblock110
-	; LineNumber: 250
+	; LineNumber: 249
 	lda $d018
 	and #%00001111
 	ora #192
 	sta $d018
 swap_screens_elsedoneblock111
-	; LineNumber: 253
+	; LineNumber: 252
 	; Multicolor mode
 	lda #16
 	ora $d016
 	sta $d016
-	; LineNumber: 257
+	; LineNumber: 256
 	rts
 end_procedure_swap_screens
 block1
 main_block_begin_
-	; LineNumber: 263
+	; LineNumber: 262
 	
 ; //copy_colors(1);
 ; // ------------------------------------------------------------------------
 ; // Main program.
 ; // ------------------------------------------------------------------------
 	sei
-	; LineNumber: 266
+	; LineNumber: 264
 	
 ; // System IRQs, not mine.
+	; Disable interrupts
+	ldy #$7f    ; $7f = %01111111
+	sty $dc0d   ; Turn off CIAs Timer interrupts
+	sty $dd0d   ; Turn off CIAs Timer interrupts
+	; LineNumber: 266
 	lda #$00
 	ldx #$30
 	sta screen_base_ptr
