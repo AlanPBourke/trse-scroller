@@ -1,0 +1,334 @@
+/*from to
+311  14 Non-visible part of the top of the screen / Non-visible part of the upper border (16 lines)
+ 15  50 Visible part of the upper border (36 lines)
+ 51 250 Regular (and visible, doh!) part of the display / Screen background (200 lines)
+251 299 Visible part of the lower border (49 lines)
+300 302 Visible part of the vertical blanking interval (VBI) / Very bottom of the visible screen  (3 lines)
+303 310 Non-visible part of the vertical blanking interval (VBI) (8 lines)
+*/
+
+/* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
+/* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
+/* https://www.pagetable.com/c64ref/6502/?tab=2#STA */
+/* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
+/* https://github.com/mwenge/uridium */
+program x_scroll;
+
+var
+
+	@define useKernal "0"
+	
+	const first_vis_line : byte = 50;
+	const start_colorcopy_line : byte = 65;
+	const begin_vblank_line : byte = 245;
+	const screen_base : address = $3000;
+	const screen_backbuffer_base : address = screen_base + 1024;
+	const vic_colour_base : address = $d800;
+	const charset_base : address = $2000;
+	const map_height : byte = 17;
+	const map_width : integer = 512;
+	const map_base : address = $5000;
+	
+	charset : IncBin("resources/UridiumChars.bin", #charset_base);
+	map : IncBin("resources/UridiumMap.bin", #map_base);
+	 
+	
+	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
+	
+	offset, map_column, map_offset : integer = 0;
+	
+	val, startrow, endrow, current_screen, i, keyin : byte = 0;
+	row, col, numlines, this_colour, this_char, startline : byte = 0;	
+
+	scroll : signed byte = 7;
+
+	//caddr : array[25] of integer;
+
+	// Forward declarations.	
+	interrupt irq_begin_vblank();
+	procedure screen_swap();
+	procedure copy_colors();
+	procedure swap_screens();
+	procedure DrawColumn39ToBack();
+	procedure copy_and_shift();
+
+// Line 65
+interrupt irq_line_65;
+begin
+	
+	StartIRQ(@useKernal);
+
+	SetMultiColorMode();
+	
+	if (scroll = 0) then
+	begin
+		//startline := 0;
+		//numlines := 12;
+		copy_colors(); // color_shift_upper
+	end;	
+
+	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
+
+	CloseIRQ();
+
+end;
+
+procedure copy_colors();
+begin
+	
+	row := 0;
+	
+	while (row < numlines) do
+	begin
+		offset := (startline + row) * 40;	
+		colour_base_ptr := #vic_colour_base + offset;
+		col := 1;
+		while (col < 40) do
+		begin
+			i := col - 1;
+			colour_base_ptr[i] := colour_base_ptr[col];
+			inc(col);
+		end;
+		colour_base_ptr += 40;	
+		inc(row);
+	end;
+
+end;
+
+interrupt irq_begin_vblank;
+begin
+	
+	StartIRQ(@useKernal);
+	//waitforraster(begin_vblank_line);				// Too quick ATM
+	
+	dec(scroll);
+
+	if (scroll >= 127) then
+	begin	
+		//	addbreakpoint();
+		swap_screens();					// 2's complement, >= 127 = negative
+	end
+	else
+	begin
+
+		scrollx(scroll);
+		
+		// Copy top half of char screen to back buffer.
+		if (scroll = 4) then
+		begin
+			startline := 4;				// zero-based
+			numlines := 8;				// one based
+			copy_and_shift();
+		end;
+	
+		// Copy bottom half of char screen to back buffer.
+		if (scroll = 2) then
+		begin
+			startline := 12;
+			numlines := 9;
+			copy_and_shift();
+
+		end;
+	end;
+	
+	//hideborderx(1);
+	hideborderx(1);
+	//addbreakpoint();
+	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
+
+	CloseIRQ();
+
+end;
+
+procedure copy_and_shift();
+begin
+	
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr := #screen_backbuffer_base;
+	//addbreakpoint();
+	row := 0;
+	while (row < numlines) do
+	begin
+		
+		offset := (startline + row) * 40;	
+
+		screen_base_ptr := #screen_base + offset;
+		backbuffer_base_ptr :=  #screen_backbuffer_base + offset;
+		col := 1;
+		i := 0;
+		while (col < 40) do
+		begin
+			i := col - 1;
+			if (current_screen = 0) then
+			begin
+				backbuffer_base_ptr[i] := screen_base_ptr[col];
+			end
+			else
+			begin
+				screen_base_ptr[i] := backbuffer_base_ptr[col];
+			end;
+			inc(col);
+		end;
+
+		inc(row);
+		
+	end;
+		
+end;
+
+
+procedure DrawColumn39ToBack();	
+begin
+
+	if (current_screen = 0) then
+	begin 
+		current_screen_ptr := #screen_backbuffer_base;	
+	end
+	else 	
+	begin
+		current_screen_ptr:= #screen_base;		
+	end;
+
+	i := 0;
+	this_char := Random();
+	while (i < 25) do
+	begin
+
+		current_screen_ptr[39] := this_char;
+		current_screen_ptr := current_screen_ptr + $28;
+
+		inc(i);
+		inc(this_char);
+		
+	end;
+end;
+
+
+procedure DrawColumn39FromMap();	
+begin
+
+	if (current_screen = 0) then
+	begin 
+		current_screen_ptr := #screen_backbuffer_base;	
+	end
+	else 	
+	begin
+		current_screen_ptr := #screen_base;		
+	end;
+
+	// 4 blank rows, then 17 map rows, then 4 blank rows
+	// Base + column offset + (row offset * 512)
+	i := 1;
+
+	current_screen_ptr += (4*40);			// Start on screen row 4
+	map_ptr := #map_base + map_column;
+	
+	fori i := 0 to 17 do
+	begin
+
+		current_screen_ptr[39] := map_ptr[0];
+		current_screen_ptr += 40;
+		map_ptr += map_width;		
+				//addbreakpoint();
+	
+	end;
+	
+	inc(map_column);
+	if map_column = 254 then map_column := 0;
+	
+end;
+
+procedure swap_screens();
+begin
+	
+		//addbreakpoint();
+	DrawColumn39FromMap();
+	scroll := 7;
+	scrollx(scroll);
+
+	// todo this properly just invert
+	current_screen := (current_screen + 1) & 1;
+	if current_screen = 1 then SetScreenLocation(screen_backbuffer_base) else SetScreenLocation(screen_base);
+	
+	SetMultiColorMode();
+	
+
+	//addbreakpoint();
+	//copy_colors(1); // color_shift_lower
+
+end;
+
+procedure fillwithchar_slow();
+begin
+
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr :=  #screen_backbuffer_base;
+	colour_base_ptr := #vic_colour_base;
+	
+	this_char := 1;
+	this_colour := 0;
+	
+	row := 0;
+	
+	while row < 25 do
+	begin
+		
+		col := 0;
+		this_colour := 0;
+		while col < 40 do
+		begin
+			//colour_base_ptr[col] := this_colour;
+			screen_base_ptr[col] := this_char;
+			backbuffer_base_ptr[col] := $20;
+			inc(col);
+			inc(this_colour);
+			if (this_colour = 15) then this_colour := 0;	
+		end;
+		
+		screen_base_ptr += 40;
+		backbuffer_base_ptr += 40;
+		colour_base_ptr += 40;
+		
+		
+		inc(this_char);
+		inc(row);
+	
+		if (this_char = 11) then this_char := 1;
+
+	end;
+	
+	this_char := 1;
+
+end;
+
+begin
+
+	PreventIrQ();		// System IRQs, not mine.
+
+	screen_base_ptr := #screen_base;
+	backbuffer_base_ptr := #screen_backbuffer_base;
+	ClearScreen(1, #screen_base);
+	ClearScreen(1, #screen_backbuffer_base);	
+	
+	screen_bg_col := black;
+	screen_fg_col := white;
+	screen_fg_col[1] := yellow;
+	screen_fg_col[2] := orange;
+	SetMultiColorMode();
+//	screen_bg_col:=black;
+//	screen_fg_col:=0;
+//	screen_fg_col[2]:=dark_grey;
+	//screen_fg_col[1]:=grey;
+	
+	//poke(^$d018, 0, $17);	// Lower\upper chars
+	current_screen := 0;
+	SetScreenLocation(screen_base);
+	
+	//fillwithchar_slow();
+	
+	SetMemoryConfig(1, 0, 0);			// Do this last.
+	setcharsetlocation(#charset_base);
+	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);
+	Loop();
+
+end.
