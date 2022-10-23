@@ -58,13 +58,13 @@ begin
 	
 	StartIRQ(@useKernal);
 
-	SetMultiColorMode();
+	//SetMultiColorMode();
 	
 	if (scroll = 0) then
 	begin
 		//startline := 0;
 		//numlines := 12;
-		copy_colors(); // color_shift_upper
+		//copy_colors(); // color_shift_upper
 	end;	
 
 	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
@@ -99,8 +99,7 @@ interrupt irq_begin_vblank;
 begin
 	
 	StartIRQ(@useKernal);
-	//waitforraster(begin_vblank_line);				// Too quick ATM
-	screen_bg_col := red;
+
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -131,11 +130,10 @@ begin
 		end;
 	end;
 	
-	//hideborderx(1);
 	hideborderx(1);
-	//addbreakpoint();
+
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
-	screen_bg_col := black;
+
 	CloseIRQ();
 
 end;

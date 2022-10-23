@@ -15,35 +15,35 @@ EndBlock801:
 StartBlock810:
 	; Starting new memory block at $810
 x_scroll
-	; LineNumber: 235
+	; LineNumber: 232
 	jmp block1
+	; LineNumber: 31
 	; LineNumber: 32
-	; LineNumber: 33
-	; LineNumber: 36
+	; LineNumber: 35
 current_screen_ptr	= $02
-	; LineNumber: 36
+	; LineNumber: 35
 screen_base_ptr	= $04
-	; LineNumber: 36
+	; LineNumber: 35
 backbuffer_base_ptr	= $08
-	; LineNumber: 36
+	; LineNumber: 35
 map_ptr	= $16
-	; LineNumber: 38
+	; LineNumber: 37
 offset	dc.w	$00
-	; LineNumber: 38
+	; LineNumber: 37
 map_column	dc.w	$00
-	; LineNumber: 40
+	; LineNumber: 39
 current_screen	dc.b	$00
-	; LineNumber: 40
+	; LineNumber: 39
 i	dc.b	$00
-	; LineNumber: 41
+	; LineNumber: 40
 row	dc.b	$00
-	; LineNumber: 41
+	; LineNumber: 40
 col	dc.b	$00
-	; LineNumber: 41
+	; LineNumber: 40
 numlines	dc.b	$00
-	; LineNumber: 41
+	; LineNumber: 40
 startline	dc.b	$00
-	; LineNumber: 43
+	; LineNumber: 42
 scroll	dc.b	$07
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : DrawColumn39ToBack
@@ -118,9 +118,9 @@ end_procedure_screen_swap
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : irq_line_65
 	;    Procedure type : User-defined procedure
-	; LineNumber: 57
+	; LineNumber: 56
 irq_line_65
-	; LineNumber: 59
+	; LineNumber: 58
 	; StartIRQ
 	pha
 	txa
@@ -128,7 +128,7 @@ irq_line_65
 	tya
 	pha
 	asl $d019
-	; LineNumber: 63
+	; LineNumber: 62
 	
 ; //SetMultiColorMode();
 ; //startline := 0;
@@ -142,10 +142,10 @@ irq_line_65
 	; Signed compare
 	bne irq_line_65_elsedoneblock7
 irq_line_65_ConditionalTrueBlock5: ;Main true block ;keep 
-	; LineNumber: 64
-	; LineNumber: 68
+	; LineNumber: 63
+	; LineNumber: 67
 irq_line_65_elsedoneblock7
-	; LineNumber: 70
+	; LineNumber: 69
 	; RasterIRQ : Hook a procedure
 	lda #$f5
 	sta $d012
@@ -153,22 +153,22 @@ irq_line_65_elsedoneblock7
 	sta $fffe
 	lda #>irq_begin_vblank
 	sta $ffff
-	; LineNumber: 72
+	; LineNumber: 71
 	; CloseIRQ
 	pla
 	tay
 	pla
 	tax
 	pla
-	; LineNumber: 74
+	; LineNumber: 73
 	rti
 end_procedure_irq_line_65
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : irq_begin_vblank
 	;    Procedure type : User-defined procedure
-	; LineNumber: 99
+	; LineNumber: 98
 irq_begin_vblank
-	; LineNumber: 101
+	; LineNumber: 100
 	; StartIRQ
 	pha
 	txa
@@ -176,18 +176,10 @@ irq_begin_vblank
 	tya
 	pha
 	asl $d019
-	; LineNumber: 103
-	
-; //waitforraster(begin_vblank_line);				
-; // Too quick ATM
-	; Assigning memory location
-	lda #$2
-	; Calling storevariable on generic assign expression
-	sta $d020
-	; LineNumber: 104
+	; LineNumber: 102
 	; Test Inc dec D
 	dec scroll
-	; LineNumber: 106
+	; LineNumber: 104
 	; Binary clause Simplified: GREATEREQUAL
 	lda scroll
 	; Compare with pure num / var optimization
@@ -195,16 +187,16 @@ irq_begin_vblank
 	; Signed compare
 	bmi irq_begin_vblank_elseblock13
 irq_begin_vblank_ConditionalTrueBlock12: ;Main true block ;keep 
-	; LineNumber: 106
-	; LineNumber: 109
+	; LineNumber: 104
+	; LineNumber: 107
 	
 ; //	addbreakpoint();
 	jsr swap_screens
-	; LineNumber: 111
+	; LineNumber: 109
 	jmp irq_begin_vblank_elsedoneblock14
 irq_begin_vblank_elseblock13
+	; LineNumber: 110
 	; LineNumber: 112
-	; LineNumber: 114
 	
 ; // 2's complement, >= 127 = negative
 	lda scroll
@@ -214,7 +206,7 @@ irq_begin_vblank_elseblock13
 	and #$F8
 	ora $58
 	sta $d016
-	; LineNumber: 117
+	; LineNumber: 115
 	; Binary clause Simplified: EQUALS
 	lda scroll
 	; Compare with pure num / var optimization
@@ -222,26 +214,26 @@ irq_begin_vblank_elseblock13
 	; Signed compare
 	bne irq_begin_vblank_elsedoneblock34
 irq_begin_vblank_ConditionalTrueBlock32: ;Main true block ;keep 
-	; LineNumber: 118
-	; LineNumber: 119
+	; LineNumber: 116
+	; LineNumber: 117
 	
 ; // Copy top half of char screen to back buffer.
 	lda #$4
 	; Calling storevariable on generic assign expression
 	sta startline
-	; LineNumber: 120
+	; LineNumber: 118
 	
 ; // zero-based
 	lda #$8
 	; Calling storevariable on generic assign expression
 	sta numlines
-	; LineNumber: 121
+	; LineNumber: 119
 	
 ; // one based
 	jsr copy_and_shift
-	; LineNumber: 122
+	; LineNumber: 120
 irq_begin_vblank_elsedoneblock34
-	; LineNumber: 125
+	; LineNumber: 123
 	; Binary clause Simplified: EQUALS
 	lda scroll
 	; Compare with pure num / var optimization
@@ -249,32 +241,28 @@ irq_begin_vblank_elsedoneblock34
 	; Signed compare
 	bne irq_begin_vblank_elsedoneblock40
 irq_begin_vblank_ConditionalTrueBlock38: ;Main true block ;keep 
-	; LineNumber: 126
-	; LineNumber: 127
+	; LineNumber: 124
+	; LineNumber: 125
 	
 ; // Copy bottom half of char screen to back buffer.
 	lda #$c
 	; Calling storevariable on generic assign expression
 	sta startline
-	; LineNumber: 128
+	; LineNumber: 126
 	lda #$9
 	; Calling storevariable on generic assign expression
 	sta numlines
-	; LineNumber: 129
+	; LineNumber: 127
 	jsr copy_and_shift
-	; LineNumber: 131
+	; LineNumber: 129
 irq_begin_vblank_elsedoneblock40
-	; LineNumber: 132
+	; LineNumber: 130
 irq_begin_vblank_elsedoneblock14
-	; LineNumber: 135
-	
-; //hideborderx(1);
+	; LineNumber: 132
 	lda $D016
 	and #%11110111
 	sta $D016
-	; LineNumber: 136
-	
-; //addbreakpoint();
+	; LineNumber: 133
 	; RasterIRQ : Hook a procedure
 	lda #$41
 	sta $d012
@@ -282,42 +270,37 @@ irq_begin_vblank_elsedoneblock14
 	sta $fffe
 	lda #>irq_line_65
 	sta $ffff
-	; LineNumber: 138
-	; Assigning memory location
-	lda #$0
-	; Calling storevariable on generic assign expression
-	sta $d020
-	; LineNumber: 139
+	; LineNumber: 136
 	; CloseIRQ
 	pla
 	tay
 	pla
 	tax
 	pla
-	; LineNumber: 141
+	; LineNumber: 138
 	rti
 end_procedure_irq_begin_vblank
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : copy_and_shift
 	;    Procedure type : User-defined procedure
-	; LineNumber: 144
+	; LineNumber: 141
 copy_and_shift
-	; LineNumber: 146
+	; LineNumber: 143
 	lda #$00
 	ldx #$30
 	sta screen_base_ptr
 	stx screen_base_ptr+1
-	; LineNumber: 147
+	; LineNumber: 144
 	ldx #$34
 	sta backbuffer_base_ptr
 	stx backbuffer_base_ptr+1
-	; LineNumber: 149
+	; LineNumber: 146
 	
 ; //addbreakpoint();
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta row
-	; LineNumber: 150
+	; LineNumber: 147
 copy_and_shift_while44
 copy_and_shift_loopstart48
 	; Binary clause Simplified: LESS
@@ -329,8 +312,8 @@ copy_and_shift_loopstart48
 copy_and_shift_localfailed83
 	jmp copy_and_shift_elsedoneblock47
 copy_and_shift_ConditionalTrueBlock45: ;Main true block ;keep 
-	; LineNumber: 151
-	; LineNumber: 153
+	; LineNumber: 148
+	; LineNumber: 150
 	; Right is PURE NUMERIC : Is word =1
 	; 16 bit mul or div
 	; Mul 16x8 setup
@@ -354,7 +337,7 @@ copy_and_shift_skip86
 	; Calling storevariable on generic assign expression
 	sta offset
 	sty offset+1
-	; LineNumber: 155
+	; LineNumber: 152
 	; Generic 16 bit op
 	; integer assignment NodeVar
 	ldy offset+1 ; keep
@@ -376,7 +359,7 @@ copy_and_shift_wordAdd87
 	lda copy_and_shift_rightvarInteger_var89
 	sta screen_base_ptr
 	sty screen_base_ptr+1
-	; LineNumber: 156
+	; LineNumber: 153
 	; Generic 16 bit op
 	; integer assignment NodeVar
 	ldy offset+1 ; keep
@@ -399,15 +382,15 @@ copy_and_shift_wordAdd90
 	lda copy_and_shift_rightvarInteger_var92
 	sta backbuffer_base_ptr
 	sty backbuffer_base_ptr+1
-	; LineNumber: 157
+	; LineNumber: 154
 	lda #$1
 	; Calling storevariable on generic assign expression
 	sta col
-	; LineNumber: 158
+	; LineNumber: 155
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta i
-	; LineNumber: 159
+	; LineNumber: 156
 copy_and_shift_while93
 copy_and_shift_loopstart97
 	; Binary clause Simplified: LESS
@@ -416,8 +399,8 @@ copy_and_shift_loopstart97
 	cmp #$28;keep
 	bcs copy_and_shift_elsedoneblock96
 copy_and_shift_ConditionalTrueBlock94: ;Main true block ;keep 
-	; LineNumber: 160
-	; LineNumber: 161
+	; LineNumber: 157
+	; LineNumber: 158
 	; 8 bit binop
 	; Add/sub where right value is constant number
 	lda col
@@ -426,15 +409,15 @@ copy_and_shift_ConditionalTrueBlock94: ;Main true block ;keep
 	 ; end add / sub var with constant
 	; Calling storevariable on generic assign expression
 	sta i
-	; LineNumber: 162
+	; LineNumber: 159
 	; Binary clause Simplified: EQUALS
 	clc
 	lda current_screen
 	; cmp #$00 ignored
 	bne copy_and_shift_elseblock111
 copy_and_shift_ConditionalTrueBlock110: ;Main true block ;keep 
-	; LineNumber: 163
-	; LineNumber: 164
+	; LineNumber: 160
+	; LineNumber: 161
 	; Load pointer array
 	ldy col
 	lda (screen_base_ptr),y
@@ -442,11 +425,11 @@ copy_and_shift_ConditionalTrueBlock110: ;Main true block ;keep
 	; Storing to a pointer
 	ldy i ; optimized, look out for bugs
 	sta (backbuffer_base_ptr),y
-	; LineNumber: 166
+	; LineNumber: 163
 	jmp copy_and_shift_elsedoneblock112
 copy_and_shift_elseblock111
-	; LineNumber: 167
-	; LineNumber: 168
+	; LineNumber: 164
+	; LineNumber: 165
 	; Load pointer array
 	ldy col
 	lda (backbuffer_base_ptr),y
@@ -454,62 +437,62 @@ copy_and_shift_elseblock111
 	; Storing to a pointer
 	ldy i ; optimized, look out for bugs
 	sta (screen_base_ptr),y
-	; LineNumber: 169
+	; LineNumber: 166
 copy_and_shift_elsedoneblock112
-	; LineNumber: 170
+	; LineNumber: 167
 	; Test Inc dec D
 	inc col
-	; LineNumber: 171
+	; LineNumber: 168
 	jmp copy_and_shift_while93
 copy_and_shift_elsedoneblock96
 copy_and_shift_loopend98
-	; LineNumber: 173
+	; LineNumber: 170
 	; Test Inc dec D
 	inc row
-	; LineNumber: 175
+	; LineNumber: 172
 	jmp copy_and_shift_while44
 copy_and_shift_elsedoneblock47
 copy_and_shift_loopend49
-	; LineNumber: 177
+	; LineNumber: 174
 	rts
 end_procedure_copy_and_shift
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : DrawColumn39FromMap
 	;    Procedure type : User-defined procedure
-	; LineNumber: 181
+	; LineNumber: 178
 DrawColumn39FromMap
-	; LineNumber: 183
+	; LineNumber: 180
 	; Binary clause Simplified: EQUALS
 	clc
 	lda current_screen
 	; cmp #$00 ignored
 	bne DrawColumn39FromMap_elseblock120
 DrawColumn39FromMap_ConditionalTrueBlock119: ;Main true block ;keep 
-	; LineNumber: 183
-	; LineNumber: 185
+	; LineNumber: 180
+	; LineNumber: 182
 	lda #$00
 	ldx #$34
 	sta current_screen_ptr
 	stx current_screen_ptr+1
-	; LineNumber: 187
+	; LineNumber: 184
 	jmp DrawColumn39FromMap_elsedoneblock121
 DrawColumn39FromMap_elseblock120
-	; LineNumber: 188
-	; LineNumber: 189
+	; LineNumber: 185
+	; LineNumber: 186
 	lda #$00
 	ldx #$30
 	sta current_screen_ptr
 	stx current_screen_ptr+1
-	; LineNumber: 190
+	; LineNumber: 187
 DrawColumn39FromMap_elsedoneblock121
-	; LineNumber: 194
+	; LineNumber: 191
 	
 ; // 4 blank rows, then 17 map rows, then 4 blank rows
 ; // Base + column offset +(row offset * 512)
 	lda #$1
 	; Calling storevariable on generic assign expression
 	sta i
-	; LineNumber: 196
+	; LineNumber: 193
 	lda current_screen_ptr
 	clc
 	adc #$a0
@@ -518,7 +501,7 @@ DrawColumn39FromMap_elsedoneblock121
 	bcc DrawColumn39FromMap_WordAdd126
 	inc current_screen_ptr+1
 DrawColumn39FromMap_WordAdd126
-	; LineNumber: 197
+	; LineNumber: 194
 	
 ; // Start on screen row 4
 	; Generic 16 bit op
@@ -543,15 +526,15 @@ DrawColumn39FromMap_wordAdd127
 	lda DrawColumn39FromMap_rightvarInteger_var129
 	sta map_ptr
 	sty map_ptr+1
-	; LineNumber: 208
+	; LineNumber: 205
 	
 ; //addbreakpoint();
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta i
 DrawColumn39FromMap_forloop130
-	; LineNumber: 200
-	; LineNumber: 202
+	; LineNumber: 197
+	; LineNumber: 199
 	; Load pointer array
 	ldy #$0
 	lda (map_ptr),y
@@ -559,7 +542,7 @@ DrawColumn39FromMap_forloop130
 	; Storing to a pointer
 	ldy #$27
 	sta (current_screen_ptr),y
-	; LineNumber: 203
+	; LineNumber: 200
 	lda current_screen_ptr
 	clc
 	adc #$28
@@ -568,7 +551,7 @@ DrawColumn39FromMap_forloop130
 	bcc DrawColumn39FromMap_WordAdd139
 	inc current_screen_ptr+1
 DrawColumn39FromMap_WordAdd139
-	; LineNumber: 204
+	; LineNumber: 201
 	lda map_ptr
 	clc
 	adc #$00
@@ -576,7 +559,7 @@ DrawColumn39FromMap_WordAdd139
 	lda map_ptr+1
 	adc #$02
 	sta map_ptr+1
-	; LineNumber: 207
+	; LineNumber: 204
 DrawColumn39FromMap_forloopcounter132
 DrawColumn39FromMap_loopstart133
 	; Compare is onpage
@@ -588,7 +571,7 @@ DrawColumn39FromMap_loopstart133
 DrawColumn39FromMap_loopdone141: ;keep
 DrawColumn39FromMap_forloopend131
 DrawColumn39FromMap_loopend134
-	; LineNumber: 209
+	; LineNumber: 206
 	lda map_column
 	clc
 	adc #$01
@@ -597,7 +580,7 @@ DrawColumn39FromMap_loopend134
 	bcc DrawColumn39FromMap_WordAdd142
 	inc map_column+1
 DrawColumn39FromMap_WordAdd142
-	; LineNumber: 210
+	; LineNumber: 207
 	; Binary clause INTEGER: EQUALS
 	; Compare INTEGER with pure num / var optimization. GREATER. 
 	lda map_column+1   ; compare high bytes
@@ -608,37 +591,37 @@ DrawColumn39FromMap_WordAdd142
 	bne DrawColumn39FromMap_elsedoneblock146
 	jmp DrawColumn39FromMap_ConditionalTrueBlock144
 DrawColumn39FromMap_ConditionalTrueBlock144: ;Main true block ;keep 
-	; LineNumber: 209
+	; LineNumber: 206
 	ldy #0   ; Force integer assignment, set y = 0 for values lower than 255
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta map_column
 	sty map_column+1
 DrawColumn39FromMap_elsedoneblock146
-	; LineNumber: 212
+	; LineNumber: 209
 	rts
 end_procedure_DrawColumn39FromMap
 	; NodeProcedureDecl -1
 	; ***********  Defining procedure : swap_screens
 	;    Procedure type : User-defined procedure
-	; LineNumber: 215
+	; LineNumber: 212
 swap_screens
-	; LineNumber: 218
+	; LineNumber: 215
 	
 ; //addbreakpoint();
 	jsr DrawColumn39FromMap
-	; LineNumber: 219
+	; LineNumber: 216
 	lda #$7
 	; Calling storevariable on generic assign expression
 	sta scroll
-	; LineNumber: 220
+	; LineNumber: 217
 	; ScrollX method
 	sta $58
 	lda $d016  
 	and #$F8
 	ora $58
 	sta $d016
-	; LineNumber: 223
+	; LineNumber: 220
 	
 ; // todo this properly just invert
 	; 8 bit binop
@@ -653,53 +636,53 @@ swap_screens
 	 ; end add / sub var with constant
 	; Calling storevariable on generic assign expression
 	sta current_screen
-	; LineNumber: 224
+	; LineNumber: 221
 	; Binary clause Simplified: EQUALS
 	; Compare with pure num / var optimization
 	cmp #$1;keep
 	bne swap_screens_elseblock152
 swap_screens_ConditionalTrueBlock151: ;Main true block ;keep 
-	; LineNumber: 223
+	; LineNumber: 220
 	lda $d018
 	and #%00001111
 	ora #208
 	sta $d018
 	jmp swap_screens_elsedoneblock153
 swap_screens_elseblock152
-	; LineNumber: 223
+	; LineNumber: 220
 	lda $d018
 	and #%00001111
 	ora #192
 	sta $d018
 swap_screens_elsedoneblock153
-	; LineNumber: 226
+	; LineNumber: 223
 	; Multicolor mode
 	lda #16
 	ora $d016
 	sta $d016
-	; LineNumber: 232
+	; LineNumber: 229
 	rts
 end_procedure_swap_screens
 block1
 main_block_begin_
-	; LineNumber: 236
+	; LineNumber: 233
 	
 ; //addbreakpoint();
 ; //copy_colors(1); 
 ; // color_shift_lower
 	sei
-	; LineNumber: 239
+	; LineNumber: 236
 	
 ; // System IRQs, not mine.
 	lda #$00
 	ldx #$30
 	sta screen_base_ptr
 	stx screen_base_ptr+1
-	; LineNumber: 240
+	; LineNumber: 237
 	ldx #$34
 	sta backbuffer_base_ptr
 	stx backbuffer_base_ptr+1
-	; LineNumber: 241
+	; LineNumber: 238
 	; Clear screen with offset
 	lda #$1
 	ldx #$fa
@@ -710,7 +693,7 @@ MainProgram_clearloop158
 	sta $01f4+$3000,x
 	sta $02ee+$3000,x
 	bne MainProgram_clearloop158
-	; LineNumber: 241
+	; LineNumber: 238
 	; Clear screen with offset
 	lda #$1
 	ldx #$fa
@@ -721,30 +704,30 @@ MainProgram_clearloop159
 	sta $01f4+$3400,x
 	sta $02ee+$3400,x
 	bne MainProgram_clearloop159
-	; LineNumber: 244
+	; LineNumber: 241
 	; Assigning memory location
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta $d020
-	; LineNumber: 245
+	; LineNumber: 242
 	; Assigning memory location
 	lda #$1
 	; Calling storevariable on generic assign expression
 	sta $d021
-	; LineNumber: 246
+	; LineNumber: 243
 	lda #$7
 	; Calling storevariable on generic assign expression
 	sta $D021+$1
-	; LineNumber: 247
+	; LineNumber: 244
 	lda #$8
 	; Calling storevariable on generic assign expression
 	sta $D021+$2
-	; LineNumber: 248
+	; LineNumber: 245
 	; Multicolor mode
 	lda #16
 	ora $d016
 	sta $d016
-	; LineNumber: 255
+	; LineNumber: 252
 	
 ; //	screen_bg_col:=black;
 ; //	screen_fg_col:=0;
@@ -755,12 +738,12 @@ MainProgram_clearloop159
 	lda #$0
 	; Calling storevariable on generic assign expression
 	sta current_screen
-	; LineNumber: 256
+	; LineNumber: 253
 	lda $d018
 	and #%00001111
 	ora #192
 	sta $d018
-	; LineNumber: 259
+	; LineNumber: 256
 	
 ; //fillwithchar_slow();
 	; Set Memory Config
@@ -768,14 +751,14 @@ MainProgram_clearloop159
 	and #%11111000
 	ora #%101
 	sta $01
-	; LineNumber: 261
+	; LineNumber: 258
 	
 ; // Do this last.
 	lda $d018
 	and #%11110001
 	ora #8
 	sta $d018
-	; LineNumber: 262
+	; LineNumber: 259
 	sei
 	; Disable interrupts
 	ldy #$7f    ; $7f = %01111111
@@ -796,9 +779,9 @@ MainProgram_clearloop159
 	sta $d011
 	asl $d019
 	cli
-	; LineNumber: 263
+	; LineNumber: 260
 	jmp * ; loop like (�/%
-	; LineNumber: 265
+	; LineNumber: 262
 main_block_end_
 	; End of program
 	; Ending memory block at $810

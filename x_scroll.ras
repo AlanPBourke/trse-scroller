@@ -16,9 +16,8 @@ program x_scroll;
 
 var
 
-	@define useKernal "0"
+	@define useKernal "0"	
 	
-	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
 	const screen_base : address = $3000;
@@ -35,9 +34,9 @@ var
 	
 	current_screen_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
-	offset, map_column, map_offset : integer = 0;
+	offset, map_column : integer = 0;
 	
-	val, startrow, endrow, current_screen, i, keyin : byte = 0;
+	startrow, endrow, current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
