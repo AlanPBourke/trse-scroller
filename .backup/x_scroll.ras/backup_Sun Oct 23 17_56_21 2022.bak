@@ -17,32 +17,31 @@ program x_scroll;
 var
 
 	@define useKernal "0"	
-	@define unroll 1
+	@define unroll 1				// -- Set to 1 to use unrolled loop in screen copy.
 	
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
-	const screen_base : address = $3000;
-	const screen_backbuffer_base : address = screen_base + 1024;
+
 	const vic_colour_base : address = $d800;
 	const charset_base : address = $2000;
 	const map_height : byte = 17;
 	const map_width : integer = 512;
 	const map_base : address = $5000;
 	
+	const screen_base : address = $3000;
+	const screen_backbuffer_base : address = screen_base + 1024;
+	
 	charset : IncBin("resources/UridiumChars.bin", #charset_base);
-	map : IncBin("resources/UridiumMap.bin", #map_base);
-	 
+	map : IncBin("resources/UridiumMap.bin", #map_base);	 
 	
 	from_ptr, to_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
 	offset, map_column : integer = 0;
 	
-	startrow, endrow, current_screen, i: byte = 0;
+	current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
-
-	//caddr : array[25] of integer;
 
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
@@ -65,7 +64,7 @@ begin
 	begin
 		//startline := 0;
 		//numlines := 12;
-		//copy_colors(); // color_shift_upper
+		//copy_colors(); // Don't actually need for this example.
 	end;	
 
 	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
@@ -103,10 +102,10 @@ begin
 
 	dec(scroll);
 
+	// 2's complement, >= 127 = negative
 	if (scroll >= 127) then
 	begin	
-		//	addbreakpoint();
-		swap_screens();					// 2's complement, >= 127 = negative
+		swap_screens();					
 	end
 	else
 	begin
@@ -152,13 +151,15 @@ begin
 		to_ptr :=  #screen_base;		
 	end;
 
-	from_ptr += 1 + (startline * 40);
+	from_ptr += 1 + (startline * 40);		// Start copying chars 1 .. 40 from front 
+											// to chars 0 .. 39 on back.
 	to_ptr += (startline * 40);
 	
 	row := 0;
 	while (row < numlines) do
 	begin
 		
+		// Doesn't seem to affect code size in this instance ...
 		@if unroll = 0
 			memcpyfast(from_ptr, 0, to_ptr, 39);
 		@else

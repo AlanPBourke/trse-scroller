@@ -1,48 +1,47 @@
-/*from to
-311  14 Non-visible part of the top of the screen / Non-visible part of the upper border (16 lines)
- 15  50 Visible part of the upper border (36 lines)
- 51 250 Regular (and visible, doh!) part of the display / Screen background (200 lines)
-251 299 Visible part of the lower border (49 lines)
-300 302 Visible part of the vertical blanking interval (VBI) / Very bottom of the visible screen  (3 lines)
-303 310 Non-visible part of the vertical blanking interval (VBI) (8 lines)
-*/
-
-/* https://lemonspawn.com/turbo-rascal-syntax-error-expected-but-begin/turbo-rascal-se-tutorials/tutorial-8-full-screen-smooth-scrolling-know-your-timing-banking/ */
-/* http://1amstudios.com/2014/12/07/c64-smooth-scrolling*/
-/* https://www.pagetable.com/c64ref/6502/?tab=2#STA */
-/* https://ist.uwaterloo.ca/~schepers/MJK/ascii/VIC-Article.txt */
-/* https://github.com/mwenge/uridium */
+//
+// This program does a right to left x-scroll using the standard double buffered approach.
+// It uses a Uridium ship map, those are 512 chars wide by 17 chars high. Therefore on a text
+// screen there are 4 blank rows (or 4 non-moving starfield rows in the actual game), then 17
+// rows of ship chars, then another 4 blank rows. The scroll routine only copies\shifts the
+// 17 ship rows between front and back for more speed.
+//
+// The charset is dumped from one of the CharPad examples.
+//
+// The general approach is from: http://1amstudios.com/2014/12/07/c64-smooth-scrolling
+//
+// In pseudocode terms described here: https://github.com/jeff-1amstudios/c64-smooth-scrolling
+//
+//
 program x_scroll;
 
 var
 
 	@define useKernal "0"	
-	@define unroll 1
+	@define unroll 1				// -- Set to 1 to use unrolled loop in screen copy.
 	
 	const start_colorcopy_line : byte = 65;
 	const begin_vblank_line : byte = 245;
-	const screen_base : address = $3000;
-	const screen_backbuffer_base : address = screen_base + 1024;
+
 	const vic_colour_base : address = $d800;
 	const charset_base : address = $2000;
 	const map_height : byte = 17;
 	const map_width : integer = 512;
 	const map_base : address = $5000;
 	
+	const screen_base : address = $3000;
+	const screen_backbuffer_base : address = screen_base + 1024;
+	
 	charset : IncBin("resources/UridiumChars.bin", #charset_base);
-	map : IncBin("resources/UridiumMap.bin", #map_base);
-	 
+	map : IncBin("resources/UridiumMap.bin", #map_base);	 
 	
 	from_ptr, to_ptr, screen_base_ptr, backbuffer_base_ptr, colour_base_ptr, map_ptr: pointer;
 	
 	offset, map_column : integer = 0;
 	
-	startrow, endrow, current_screen, i: byte = 0;
+	current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
 	scroll : signed byte = 7;
-
-	//caddr : array[25] of integer;
 
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
@@ -51,7 +50,7 @@ var
 	procedure swap_screens();
 	procedure DrawColumn39ToBack();
 	procedure copy_and_shift();
-	procedure copy_and_shift_memcpyfast();
+	
 
 // Line 65
 interrupt irq_line_65;
@@ -65,7 +64,7 @@ begin
 	begin
 		//startline := 0;
 		//numlines := 12;
-		//copy_colors(); // color_shift_upper
+		//copy_colors(); // Don't actually need for this example.
 	end;	
 
 	RasterIRQ(irq_begin_vblank(), begin_vblank_line, @useKernal);
@@ -74,6 +73,12 @@ begin
 
 end;
 
+// ------------------------------------------------------------------------
+// copy_colors()
+//
+// Copies an area the colour screen one step to the left.
+// 
+// ------------------------------------------------------------------------
 procedure copy_colors();
 begin
 	
@@ -96,6 +101,16 @@ begin
 
 end;
 
+// ------------------------------------------------------------------------
+// irq_begin_vblank
+//
+// The main interrupt at around the vblank area at the bottom of the screen.
+// Scrolls the screen right to left using the pixel hardware scroll.
+// Will either copy the top half of the screen to the back buffer shifted 
+// left one char, or the same the other direction, or will point the VIC 
+// at the other screen when the time comes, that being when the h/w scroll 
+// position has gone all the way to the left (<0)
+// ------------------------------------------------------------------------
 interrupt irq_begin_vblank;
 begin
 	
@@ -103,10 +118,10 @@ begin
 
 	dec(scroll);
 
+	// 2's complement, >= 127 = negative
 	if (scroll >= 127) then
 	begin	
-		//	addbreakpoint();
-		swap_screens();					// 2's complement, >= 127 = negative
+		swap_screens();					
 	end
 	else
 	begin
@@ -118,8 +133,7 @@ begin
 		begin
 			startline := 4;				// zero-based
 			numlines := 8;				// one based
-			//copy_and_shift();
-			copy_and_shift_memcpyfast();
+			copy_and_shift();
 		end;
 	
 		// Copy bottom half of char screen to back buffer.
@@ -127,8 +141,7 @@ begin
 		begin
 			startline := 12;
 			numlines := 9;
-			//copy_and_shift();
-			copy_and_shift_memcpyfast();
+			copy_and_shift();
 		end;
 	end;
 	
@@ -140,6 +153,13 @@ begin
 
 end;
 
+// ------------------------------------------------------------------------
+// copy_and_shift()
+//
+// Copies the current screen to the backbuffer screen but shifted left one 
+// char, leaving a row at the the right where a new slice of the map will be 
+// drawn in.
+// ------------------------------------------------------------------------
 procedure copy_and_shift();
 begin
 	
@@ -154,23 +174,33 @@ begin
 		to_ptr :=  #screen_base;		
 	end;
 
-	from_ptr += 1 + (startline * 40);
+	from_ptr += 1 + (startline * 40);		// Start copying chars 1 .. 40 from front 
+											// to chars 0 .. 39 on back.
 	to_ptr += (startline * 40);
 	
 	row := 0;
 	while (row < numlines) do
 	begin
+		
+		// Doesn't seem to affect code size in this instance ...
 		@if unroll = 0
 			memcpyfast(from_ptr, 0, to_ptr, 39);
 		@else
 			memcpyunroll(from_ptr, 0, to_ptr, 39);
 		@endif
+		
 		from_ptr += 40;
 		to_ptr += 40;
 		inc(row);
 	end;
 end;
 
+// ------------------------------------------------------------------------
+// DrawColumn39FromMap
+//
+// Draws the next column of chars from the map at the rightmost column on
+// the back buffer screen.
+// ------------------------------------------------------------------------
 procedure DrawColumn39FromMap();	
 begin
 
@@ -196,7 +226,6 @@ begin
 		to_ptr[39] := map_ptr[0];
 		to_ptr += 40;
 		map_ptr += map_width;		
-				//addbreakpoint();
 	
 	end;
 	
@@ -205,6 +234,11 @@ begin
 	
 end;
 
+// ------------------------------------------------------------------------
+// swap_screens
+//
+// Flips the current screen between pointing at the front and back buffers.
+// ------------------------------------------------------------------------
 procedure swap_screens();
 begin
 	
@@ -224,7 +258,9 @@ begin
 
 end;
 
-
+// ------------------------------------------------------------------------
+// Main program.
+// ------------------------------------------------------------------------
 begin
 
 	PreventIrQ();		// System IRQs, not mine.
@@ -234,22 +270,16 @@ begin
 	ClearScreen(1, #screen_base);
 	ClearScreen(1, #screen_backbuffer_base);	
 	
+	// Sort-of-correct paletter from the game Uridium.
 	screen_bg_col := black;
 	screen_fg_col := white;
 	screen_fg_col[1] := yellow;
 	screen_fg_col[2] := orange;
 	SetMultiColorMode();
-//	screen_bg_col:=black;
-//	screen_fg_col:=0;
-//	screen_fg_col[2]:=dark_grey;
-	//screen_fg_col[1]:=grey;
-	
-	//poke(^$d018, 0, $17);	// Lower\upper chars
+
 	current_screen := 0;
 	SetScreenLocation(screen_base);
-	
-	//fillwithchar_slow();
-	
+
 	SetMemoryConfig(1, 0, 0);			// Do this last.
 	setcharsetlocation(#charset_base);
 	StartRasterChain(irq_line_65(), start_colorcopy_line, @useKernal);
