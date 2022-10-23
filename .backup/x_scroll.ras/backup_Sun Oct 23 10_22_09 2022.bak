@@ -20,7 +20,7 @@ var
 	
 	const first_vis_line : byte = 50;
 	const start_colorcopy_line : byte = 65;
-	const begin_vblank_line : byte = 251;
+	const begin_vblank_line : byte = 245;
 	const screen_base : address = $3000;
 	const screen_backbuffer_base : address = screen_base + 1024;
 	const vic_colour_base : address = $d800;
@@ -58,7 +58,7 @@ begin
 	
 	StartIRQ(@useKernal);
 
-	SetMultiColorMode();
+	//SetMultiColorMode();
 	
 	if (scroll = 0) then
 	begin
@@ -100,7 +100,7 @@ begin
 	
 	StartIRQ(@useKernal);
 	//waitforraster(begin_vblank_line);				// Too quick ATM
-	
+	screen_bg_col := red;
 	dec(scroll);
 
 	if (scroll >= 127) then
@@ -135,7 +135,7 @@ begin
 	hideborderx(1);
 	//addbreakpoint();
 	RasterIrq(irq_line_65(), start_colorcopy_line, @useKernal);	
-
+	screen_bg_col := black;
 	CloseIRQ();
 
 end;
@@ -174,33 +174,6 @@ begin
 		
 	end;
 		
-end;
-
-
-procedure DrawColumn39ToBack();	
-begin
-
-	if (current_screen = 0) then
-	begin 
-		current_screen_ptr := #screen_backbuffer_base;	
-	end
-	else 	
-	begin
-		current_screen_ptr:= #screen_base;		
-	end;
-
-	i := 0;
-	this_char := Random();
-	while (i < 25) do
-	begin
-
-		current_screen_ptr[39] := this_char;
-		current_screen_ptr := current_screen_ptr + $28;
-
-		inc(i);
-		inc(this_char);
-		
-	end;
 end;
 
 
@@ -258,57 +231,15 @@ begin
 
 end;
 
-procedure fillwithchar_slow();
-begin
-
-	screen_base_ptr := #screen_base;
-	backbuffer_base_ptr :=  #screen_backbuffer_base;
-	colour_base_ptr := #vic_colour_base;
-	
-	this_char := 1;
-	this_colour := 0;
-	
-	row := 0;
-	
-	while row < 25 do
-	begin
-		
-		col := 0;
-		this_colour := 0;
-		while col < 40 do
-		begin
-			//colour_base_ptr[col] := this_colour;
-			screen_base_ptr[col] := this_char;
-			backbuffer_base_ptr[col] := $20;
-			inc(col);
-			inc(this_colour);
-			if (this_colour = 15) then this_colour := 0;	
-		end;
-		
-		screen_base_ptr += 40;
-		backbuffer_base_ptr += 40;
-		colour_base_ptr += 40;
-		
-		
-		inc(this_char);
-		inc(row);
-	
-		if (this_char = 11) then this_char := 1;
-
-	end;
-	
-	this_char := 1;
-
-end;
 
 begin
+
 	PreventIrQ();		// System IRQs, not mine.
-//	CreateAddressTable( #caddr, $D800, 40, 25 );   // $D800 color address, 40 characters per column, 25 rows
-	//DefineScreen();
+
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
-	ClearScreen($20, #screen_base);
-	ClearScreen($20, #screen_backbuffer_base);	
+	ClearScreen(1, #screen_base);
+	ClearScreen(1, #screen_backbuffer_base);	
 	
 	screen_bg_col := black;
 	screen_fg_col := white;
@@ -320,7 +251,7 @@ begin
 //	screen_fg_col[2]:=dark_grey;
 	//screen_fg_col[1]:=grey;
 	
-	poke(^$d018, 0, $17);	// Lower\upper chars
+	//poke(^$d018, 0, $17);	// Lower\upper chars
 	current_screen := 0;
 	SetScreenLocation(screen_base);
 	
