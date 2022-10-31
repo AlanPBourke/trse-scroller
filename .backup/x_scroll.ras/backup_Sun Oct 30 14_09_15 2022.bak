@@ -41,7 +41,7 @@ var
 	current_screen, i: byte = 0;
 	row, col, numlines, this_colour, this_char, startline : byte = 0;	
 
-	scroll : signed byte = 7;
+	scroll : byte = 7;
 
 	// Forward declarations.	
 	interrupt irq_begin_vblank();
@@ -117,7 +117,7 @@ begin
 	StartIRQ(@useKernal);
 
 	dec(scroll);
-
+	
 	// 2's complement, >= 127 means < 0
 	if (scroll >= 127) then
 	begin	
@@ -261,7 +261,8 @@ end;
 begin
 
 	PreventIrQ();		// System IRQs, not mine.
-
+	DisableCIAInterrupts();
+	
 	screen_base_ptr := #screen_base;
 	backbuffer_base_ptr := #screen_backbuffer_base;
 	ClearScreen(1, #screen_base);
